@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-theme="harbour-night">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lighthouse Keepers · First night</title>
+<link rel="stylesheet" href="lighthouse-keepers-handoff/design-system/tokens.css">
+<link rel="stylesheet" href="lighthouse-keepers-handoff/design-system/reference/lk-kit.css">
+<script src="lighthouse-keepers-handoff/design-system/reference/lk-kit.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;background:var(--surface);color:var(--ink);font-family:var(--font-read)}main{max-width:1100px;margin:auto;padding:24px}.top{display:flex;align-items:center;gap:16px;justify-content:space-between;margin-bottom:16px}.top h1{margin:0}.tag{color:var(--ink-muted)}.stage{position:relative;max-width:960px;margin:auto;background:var(--outline);line-height:0;touch-action:none}.stage canvas{display:block;width:100%;height:auto;image-rendering:pixelated}.layer{position:absolute;inset:0;width:100%;height:100%;pointer-events:auto}.dialog{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,90%);padding:22px 24px;background:var(--surface-raised);border:2px solid var(--border);text-align:center;line-height:1.45;box-shadow:0 8px 0 var(--outline)}.dialog h2{font:700 26px var(--font-game);margin:0 0 8px}.dialog p{margin:8px 0 18px;font-size:18px}.btn{font:700 18px var(--font-read);padding:12px 22px;border:0;background:var(--accent);color:var(--on-accent);cursor:pointer}.btn:focus-visible,.route-clear:focus-visible{outline:3px solid var(--ink);outline-offset:3px}.hud{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;line-height:1.2;pointer-events:none}.chip{background:var(--surface-raised);border:1px solid var(--border);padding:8px 12px;font-size:16px}.guide{position:absolute;right:14px;bottom:14px;max-width:300px;background:var(--surface-raised);border:1px solid var(--border);padding:10px 14px;font-size:16px;line-height:1.3}.controls{display:flex;justify-content:center;gap:12px;align-items:center;margin:16px auto;min-height:48px}.controls .hint{color:var(--ink-muted);font-size:16px}.route-clear{font:inherit;padding:8px 12px;background:var(--surface-raised);color:var(--ink);border:1px solid var(--border);cursor:pointer}.status{text-align:center;color:var(--ink-muted);font-size:16px;margin:8px}.hide{display:none!important}@media(max-width:600px){main{padding:12px}.top{align-items:flex-start;flex-direction:column}.dialog h2{font-size:22px}.dialog p{font-size:16px}.chip{font-size:14px;padding:6px 8px}.guide{font-size:14px;max-width:210px}}
+</style></head>
+<body><main>
+<div class="top"><h1 class="parent-heading">Lighthouse Keepers</h1><span class="tag">Your first night at the harbour</span></div>
+<div class="stage" id="stage"><canvas id="scene" width="240" height="135" aria-label="Pixel-art harbour with lighthouse, fog and boats"></canvas><canvas class="layer" id="overlay" width="240" height="135" aria-label="Pilot route and moving boat"></canvas>
+<div class="hud"><span class="chip" id="phaseLabel">Lamp lighting</span><span class="chip" id="countLabel">Boats home: 0 of 3</span></div>
+<div class="guide" id="guide">Sit tall and keep your eyes on the light.</div>
+<section class="dialog" id="dialog"><h2 id="title">Welcome, Keeper</h2><p id="copy">The lamp is ready. Let’s light the harbour together.</p><button class="btn" id="next">Light the lamp</button></section></div>
+<div class="controls"><span class="hint" id="hint">Keyboard simulator: hold Space to brighten the lamp</span><button class="route-clear hide" id="clear">Clear route</button></div>
+<p class="status" id="status" aria-live="polite">No headset needed. Hold Space to practise.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id), scene=$('scene'), overlay=$('overlay'), ctx=overlay.getContext('2d');
+const C={phase:'intro',att:0.08,smoothed:0.08,steady:false,aboveAt:0,route:[],boat:null,rescued:0,last:performance.now(),lastPaint:0,rocks:[{x:148,y:86},{x:181,y:78}],targets:[{x:198,y:71},{x:174,y:105},{x:220,y:88}]};
+const cfg={threshold:.45,hold:3,theme:'harbour-night',lighthouse:'classic',fog:'bands'};
+function dialog(title,copy,button){$('title').textContent=title;$('copy').textContent=copy;$('next').textContent=button;$('dialog').classList.remove('hide')}
+function draw(now){const dt=Math.min(.08,(now-C.last)/1000);C.last=now;C.smoothed+=(C.att-C.smoothed)*(1-Math.exp(-dt/1));
+ if(C.phase==='tide'&&C.att>=cfg.threshold){if(!C.aboveAt)C.aboveAt=now;if(now-C.aboveAt>=cfg.hold*1000)C.steady=true}else{C.aboveAt=0;C.steady=false}
+ const level=C.smoothed < cfg.threshold ? .08 : .25+.75*(C.smoothed-cfg.threshold)/(1-cfg.threshold);
+ LK.harbour(scene,{w:240,h:135,attention:level,steady:C.steady,flare:false,fog:cfg.fog,phase:C.phase==='intro'?'lighting':C.phase==='calm'?'calm':C.phase==='dawn'?'dawn':'tide',lighthouse:cfg.lighthouse,theme:cfg.theme,route:false,seed:7});
+ if(now-C.lastPaint>40){C.lastPaint=now;paint(now)}requestAnimationFrame(draw)}
+function paint(now){ctx.clearRect(0,0,240,135);const p=LK.pal(cfg.theme);
+ if(C.phase!=='tide')return;
+ const dock={x:64,y:91};
+ if(C.route.length>1){ctx.fillStyle=p.route;for(let i=1;i<C.route.length;i++){const a=C.route[i-1],b=C.route[i],n=Math.ceil(Math.hypot(b.x-a.x,b.y-a.y));for(let j=0;j<n;j+=3){const t=j/n;ctx.fillRect(Math.round(a.x+(b.x-a.x)*t),Math.round(a.y+(b.y-a.y)*t),1,1)}}ctx.fillRect(dock.x,dock.y,4,3)}
+ if(C.steady){for(const r of C.rocks){LK.drawSprite(ctx,LK.SPRITES.rock,r.x,r.y,p)}}
+ if(C.boat){const b=C.boat;LK.drawSprite(ctx,LK.SPRITES.row,Math.round(b.x),Math.round(b.y),p);if(b.moving&&C.route.length>1){const q=nearest(b);if(q){const d=Math.hypot(q.x-b.x,q.y-b.y);if(d<2){if(b.target>=C.route.length-1){C.boat=null;C.rescued++;$('countLabel').textContent=`Boats home: ${C.rescued} of 3`;if(C.rescued===3){C.phase='dawn';$('phaseLabel').textContent='Dawn';dialog('Together, you brought 3 boats home','The fog lifts over a safe harbour. You helped every boat find its way.','Play again');$('guide').textContent='The harbour is calm.'}}else b.target++}else if(isLit(b.x,b.y)){b.x+=(q.x-b.x)/d*.28;b.y+=(q.y-b.y)/d*.28}}}}
+ if(C.phase==='tide'&&!C.boat&&C.rescued<3){const t=C.targets[C.rescued];LK.drawSprite(ctx,LK.SPRITES.row,t.x,t.y,p)}
+}
+function nearest(b){return C.route[b.target]||C.route[0]}
+function isLit(x,y){const dx=x-36,dy=y-45,ang=Math.atan2(dy,dx)-.1;return C.smoothed>=cfg.threshold&&Math.abs(ang)<.035+.3*C.smoothed&&Math.hypot(dx,dy)<240*(.32+.78*C.smoothed)}
+function startTide(){C.phase='tide';C.route=[];C.boat=null;C.rescued=0;$('phaseLabel').textContent='Tide 1';$('countLabel').textContent='Boats home: 0 of 3';$('guide').textContent='Draw a route from a boat to the dock. Boats wait in the fog.';$('hint').textContent='Keeper: hold Space · Pilot: draw from a boat toward the dock';$('clear').classList.remove('hide');$('dialog').classList.add('hide');$('status').textContent='The Pilot draws a safe route. Hold Space to open the beam.'}
+$('next').onclick=()=>{if(C.phase==='intro'){C.phase='calm';$('phaseLabel').textContent='Calm waters';$('guide').textContent='Sit tall and keep your eyes on the light.';dialog('Calm waters','Keeper, hold Space to brighten the beam. The light changes gently with you.','Begin Tide 1')}else if(C.phase==='calm')startTide();else{C.phase='intro';C.att=.08;C.smoothed=.08;C.steady=false;C.boat=null;C.route=[];C.aboveAt=0;$('phaseLabel').textContent='Lamp lighting';$('countLabel').textContent='Boats home: 0 of 3';$('guide').textContent='Sit tall and keep your eyes on the light.';$('hint').textContent='Keyboard simulator: hold Space to brighten the lamp';$('clear').classList.add('hide');dialog('Welcome, Keeper','The lamp is ready. Let’s light the harbour together.','Light the lamp')}};
+function setAttention(on){C.att=on?.82:.08;$('status').textContent=on?'The lamp is brightening. Keep a comfortable breath.':'The lamp rests at a gentle glow.'}
+window.addEventListener('keydown',e=>{if(e.code==='Space'&&C.phase!=='intro'){e.preventDefault();setAttention(true)}});window.addEventListener('keyup',e=>{if(e.code==='Space')setAttention(false)});window.addEventListener('blur',()=>setAttention(false));
+function pos(e){const r=overlay.getBoundingClientRect();return{x:Math.max(0,Math.min(239,(e.clientX-r.left)*240/r.width)),y:Math.max(0,Math.min(134,(e.clientY-r.top)*135/r.height))}}
+overlay.addEventListener('pointerdown',e=>{if(C.phase!=='tide')return;const q=pos(e);if(C.boat){C.route.push(q);overlay.setPointerCapture(e.pointerId);return}const t=C.targets[C.rescued];if(Math.hypot(q.x-t.x,q.y-t.y)<20){C.route=[q];C.boat={x:t.x,y:t.y,moving:false,target:0};overlay.setPointerCapture(e.pointerId)}});
+overlay.addEventListener('pointermove',e=>{if(e.buttons&&C.boat){const q=pos(e);const prev=C.route[C.route.length-1];if(!prev||Math.hypot(prev.x-q.x,prev.y-q.y)>2)C.route.push(q)}});
+overlay.addEventListener('pointerup',()=>{if(C.phase==='tide'&&C.boat&&C.route.length>1){C.route.push({x:64,y:91});C.boat.target=0;C.boat.moving=true;$('status').textContent='Your boat will move whenever the water is lit.'}});
+$('clear').onclick=()=>{C.route=[];C.boat=null};requestAnimationFrame(draw);
+</script></body></html>
