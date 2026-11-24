@@ -109,7 +109,8 @@
 'use strict';
 // ---------- Config (open design decisions stay as values) ----------
 const CFG = {
-  theme: 'harbour-night',
+  // Palette per stage.
+  stagePalettes: { lighting: 'harbour-night', calm: 'sea-glass', tide: 'sea-glass', rest: 'sea-glass', end: 'harbour-night' },
   lighthouse: 'classic', fog: 'bands',   // fog: bands | dither | clouds
   threshold: 45, holdSec: 3,             // attention 0–100; seconds above threshold for a steady beam
   easeSec: 1, frostAbove: 50, steadyForFlare: 3, flareSec: 10,
@@ -198,6 +199,7 @@ function newNight() {
     beam: { level: 0, aim: DEFAULT_AIM, aboveSince: null, steady: false, count: 0, flareUntil: 0, flare: 0, lowSince: 0, eff: 0 },
     dens: 0.72, hist: [], histT: 0, tideStats: null, pending: { threshold: CFG.threshold, holdSec: CFG.holdSec },
     guide: { text: '', until: 0 }, nextSpawn: 0,
+    snap: null, transT0: 0,
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
   makeNightRocks();
@@ -214,9 +216,10 @@ function palette(theme) {
   }
   return palCache[theme];
 }
-const themeFor = () => CFG.theme;
+const themeFor = stage => CFG.stagePalettes[stage];
 function applyTheme(theme) {
   if (theme === S.theme) return;
+  if (S.theme && ctx) { S.snap = ctx.getImageData(0, 0, W, H); S.transT0 = performance.now(); }
   S.theme = theme;
   document.documentElement.setAttribute('data-theme', theme);
   ({ p: P, rgb: C } = palette(theme));
@@ -577,11 +580,25 @@ function renderSprites() {
   }
 }
 
+// palette changes between stages dissolve through the Bayer pattern (no flash)
+function dissolve() {
+  if (!S.snap) return;
+  const t = (performance.now() - S.transT0) / 1500;
+  if (t >= 1) { S.snap = null; return; }
+  const cur = ctx.getImageData(0, 0, W, H), o = S.snap.data, n = cur.data;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (bay(x, y) < t) continue;
+    const k = (y * W + x) * 4; n[k] = o[k]; n[k + 1] = o[k + 1]; n[k + 2] = o[k + 2];
+  }
+  ctx.putImageData(cur, 0, 0);
+}
+
 const frosty = () => S.reading && S.reading.poor != null && S.reading.poor > CFG.frostAbove;
 
 function render(now) {
   renderBackground(now);
   renderSprites();
+  dissolve();
 }
 
 // ---------- HUD (corners only) ----------
