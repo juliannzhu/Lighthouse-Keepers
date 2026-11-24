@@ -66,7 +66,27 @@ With the bridge running, open **http://localhost:8000/harbour**. Your attention 
 - A poor signal (noise above 50) frosts the lamp glass.
 - Below the scene: attention, meditation, noise and blink readings, a 120 s trend with the threshold line, the raw EEG, band power and CSV export.
 
-The scene is drawn by the design kit in `lighthouse-keepers-handoff/design-system/reference/lk-kit.js`. Defaults (palette, lighthouse, fog, threshold, hold time) are in the `CFG` object at the top of the script in `harbour.html`.
+The scene is drawn by the design kit in `lighthouse-keepers-handoff/design-system/reference/lk-kit.js`.
+
+### Lighthouse Keepers game (one full night)
+
+Open **http://localhost:8000/game** for the playable session from the design document. It has only the game screen and the Pilot's controls bar, with no readings dashboard. It plays one night of about 12 minutes:
+
+| Stage | Palette | What happens | Pilot's keys |
+|---|---|---|---|
+| Lamp lighting | Harbour Night | The frost on the lamp clears as the headset signal settles. A setup card has the settings. | **Enter** starts the night |
+| Calm waters (1 min) | Sea Glass | No boats. The beam responds and the guide shows a calm, upright posture. | **Esc** pause |
+| Tides 1–3 (3 min each) | Sea Glass | Boats appear at the fog edge. Steer the marked boat to the dock. Boats move only in the light and stop in the dark. A steady beam reveals hidden rocks, and three steady beams make a flare. | **Arrow keys** steer, **Tab** next boat |
+| Rests (between tides) | Sea Glass | A parent card shows the last tide's attention graph, threshold, hold time, signal and high-contrast switch. Changes apply when the next tide starts. | **Enter** starts the next tide |
+| Storm ship (after tide 3) | Deep Fjord | A steady beam reveals channel buoys. Steer the big ship between them to the dock. | **Arrow keys**, **Tab** |
+| Dawn | Harbour Night | The remaining boats are towed in. The team summary is compared with last night, and sea stars buy lighthouse decorations. | — |
+
+- **N** skips to the next stage (for demos). **Esc** pauses.
+- With no headset data, **hold Space** to raise simulated attention and **F** to test the frosty lamp.
+- The beam turns slowly toward the boat the Pilot has marked. Without this, the dock and most of the bay would never be lit.
+- The high-contrast setting (Storm Ink) replaces every stage's palette and is remembered.
+- Past nights' passengers, sea stars and decorations are saved in the browser's localStorage.
+- Stage palettes, timings, speeds and other values are in the `CFG` object at the top of `game.html`. Defaults (palette, lighthouse, fog, threshold, hold time) are in the `CFG` object at the top of the script in `harbour.html`.
 
 ---
 
@@ -93,6 +113,7 @@ A web page can't read Bluetooth or serial ports directly, so `bridge.py` reads t
 | `bridge.py` | The bridge server: reads the headset and serves the page (standard library only) |
 | `index.html` | The dashboard (plain HTML + JavaScript, no frameworks) |
 | `harbour.html` | The Lighthouse Keepers harbour view driven by live attention |
+| `game.html` | The playable Lighthouse Keepers session (lamp lighting → tides → storm ship → dawn) |
 | `rfcomm_reader.swift` | Source of the Bluetooth helper |
 | `rfcomm_reader` | Prebuilt helper (universal: Apple Silicon + Intel). If you delete it, `bridge.py` rebuilds it with `swiftc` (needs Xcode Command Line Tools: `xcode-select --install`) |
 
