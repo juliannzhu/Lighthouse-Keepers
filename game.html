@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en" data-theme="harbour-night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lighthouse Keepers · one night at the harbour</title>
+<link rel="stylesheet" href="lighthouse-keepers-handoff/design-system/tokens.css">
+<link rel="stylesheet" href="lighthouse-keepers-handoff/design-system/reference/lk-kit.css">
+<script src="lighthouse-keepers-handoff/design-system/reference/lk-kit.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-read); }
+  * { box-sizing: border-box; }
+  body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: var(--space-4); padding: var(--space-4); transition: background 1.5s; }
+  .hidden { display: none !important; }
+  .scene, .lk-btn { font-variant-ligatures: none; }
+
+  /* ---------- Keeper's screen: scene + HUD (copied from the design system's Game HUD) ---------- */
+  .scene { position: relative; }
+  .scene canvas { display: block; }
+  .hud { position: absolute; font-family: var(--font-pixel); }
+  .hud.lk-panel { padding: var(--space-2) var(--space-4); }
+  .tl { top: var(--space-4); left: var(--space-4); }
+  .tr { top: var(--space-4); right: var(--space-4); text-align: center; }
+  .bl { bottom: var(--space-4); left: var(--space-4); display: flex; align-items: center; gap: var(--space-2); }
+  .br { bottom: var(--space-4); right: var(--space-4); display: flex; align-items: flex-end; gap: var(--space-2); max-width: 380px; }
+  .tide { font-size: 28px; line-height: 32px; font-weight: 600; }
+  .ticks { display: flex; gap: var(--space-1); margin-top: var(--space-1); }
+  .ticks i { width: 24px; height: 8px; background: var(--border); position: relative; overflow: hidden; }
+  .ticks i.on { background: var(--success); }
+  .ticks i b { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--success); }
+  .pips { display: flex; gap: var(--space-2); justify-content: center; margin-top: var(--space-1); }
+  .pip { width: 16px; height: 16px; transform: rotate(45deg); box-shadow: 0 0 0 4px var(--outline); background: var(--surface); margin: 6px; transition: background 1s; }
+  .pip.on { background: var(--beam); }
+  .small { font-size: 16px; line-height: 22px; }
+  .bubble { font-size: 20px; line-height: 26px; }
+  .bubble .frost { display: flex; align-items: center; gap: var(--space-2); }
+
+
+  .pause { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; font-family: var(--font-pixel); }
+
+  /* ---------- Pilot's controls bar (parent style) ---------- */
+  .bar { min-height: 120px; display: grid; grid-template-columns: 1fr auto; gap: var(--space-2) var(--space-4); align-items: center;
+    background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-2) var(--space-4); }
+  .bar .who { color: var(--ink-muted); font-weight: 700; text-transform: none; }
+  .bar .help { margin: 2px 0 0; }
+  .bar .keys { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin-top: var(--space-1); }
+  .bar .right { display: flex; align-items: center; gap: var(--space-2); }
+  .bar .lk-btn { font-size: 16px; line-height: 22px; padding: var(--space-1) var(--space-2) calc(var(--space-1) + var(--space-1)); }
+  .status { color: var(--ink-muted); }
+  kbd { font-family: var(--font-read); font-weight: 700; font-size: 14px; padding: 1px 6px; border: 1px solid var(--border);
+    border-bottom-width: 3px; border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); }
+  button:focus-visible, input:focus-visible { outline: var(--space-1) solid var(--ink); outline-offset: var(--space-2); }
+</style>
+</head>
+<body>
+
+<div class="scene" id="scene">
+  <canvas id="c" class="lk-pixel-canvas" aria-label="Pixel-art harbour at night: a lighthouse shines a beam through fog to guide boats home"></canvas>
+
+  <div class="hud tl lk-panel" id="hudTL"><div class="tide" id="stageName">The harbour</div><div class="ticks" id="ticks"><i><b></b></i><i><b></b></i><i><b></b></i></div></div>
+  <div class="hud tr lk-panel" id="hudTR"><div class="small">Steady beams</div><div class="pips"><span class="pip"></span><span class="pip"></span><span class="pip"></span></div></div>
+  <div class="hud bl lk-panel" id="hudBL"><span id="boatIcon"></span><span class="small" id="homeText">0 home</span></div>
+  <div class="hud br" id="hudBR"><span id="guideAvatar"></span><div class="lk-panel bubble" id="bubble" aria-live="polite"></div></div>
+
+  <div class="pause lk-panel hidden" id="pause"><div class="game-heading">Paused</div><div class="small">Press Esc to carry on.</div></div>
+</div>
+
+<div class="bar" id="bar">
+  <div>
+    <div class="who parent-caption">Harbour Pilot</div>
+    <div class="help parent-body" id="help"></div>
+    <div class="keys parent-caption" id="keys"></div>
+  </div>
+  <div class="right">
+    <span class="status parent-caption" id="src"></span>
+    <button class="lk-btn secondary" id="pauseBtn">Pause</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ---------- Config (open design decisions stay as values) ----------
+const CFG = {
+  theme: 'harbour-night',
+  lighthouse: 'classic', fog: 'bands',   // fog: bands | dither | clouds
+  threshold: 45, holdSec: 3,             // attention 0–100; seconds above threshold for a steady beam
+  easeSec: 1, frostAbove: 50, steadyForFlare: 3, flareSec: 10,
+};
+
+const $ = id => document.getElementById(id);
+const W = 240, H = 135, HZ = Math.round(H * 0.36);
+const BX = Math.round(W * 0.15), BY = Math.round(H * 0.62);
+const LAMP_Y = { classic: 39, stubby: 28, stone: 35 };
+const LAMP = { x: BX, y: BY - LAMP_Y[CFG.lighthouse] };
+const DEFAULT_AIM = Math.atan2(H * 0.68 - LAMP.y, W * 0.8 - LAMP.x);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const rand = (a, b) => a + Math.random() * (b - a);
+const ease = (dt, tau) => 1 - Math.exp(-dt / tau);
+
+// ---------- noise + dithering (same maths as lk-kit.js) ----------
+const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+const bay = (x, y) => (BAYER[y & 3][x & 3] + 0.5) / 16;
+function hash(x, y, s) {
+  let h = (x * 374761393 + y * 668265263 + (s || 0) * 982451653) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177 | 0; h = h ^ (h >>> 16);
+  return ((h >>> 0) % 10000) / 10000;
+}
+function vnoise(x, y, sc, s) {
+  const fx = x / sc, fy = y / sc, ix = Math.floor(fx), iy = Math.floor(fy);
+  let tx = fx - ix, ty = fy - iy; tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+  const a = hash(ix, iy, s), b = hash(ix + 1, iy, s), c = hash(ix, iy + 1, s), d = hash(ix + 1, iy + 1, s);
+  return (a + (b - a) * tx) + ((c + (d - c) * tx) - (a + (b - a) * tx)) * ty;
+}
+const fbm = (x, y, s) => vnoise(x * 0.6, y, 22, s) * 0.65 + vnoise(x, y, 9, s + 5) * 0.35;
+
+// Fog noise is fixed for the night, so bake it once.
+function bakeNoise(seed) {
+  const N = { n: new Float32Array(W * H), nb: new Float32Array(W * H), n2: new Float32Array(W * H),
+    depth: new Float32Array(W * H), star: new Float32Array(W * H) };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    N.n[i] = fbm(x, y, seed);
+    N.nb[i] = vnoise(x * 0.3, y, 5, seed + 1) * 0.6 + vnoise(x * 0.15, y, 12, seed + 2) * 0.4;
+    N.n2[i] = vnoise(x, y * 1.6, 7, seed + 3) * 0.5 + N.n[i] * 0.5;
+    N.depth[i] = y < HZ ? 0.12 : 0.12 * (1 - (y - HZ) / (H - HZ));
+    N.star[i] = hash(x, y, 3);
+  }
+  return N;
+}
+
+// ---------- attention input: headset over the bridge, or the Space-bar simulator ----------
+const IN = { att: null, poor: null, last: 0, bridge: false, simAtt: 20, space: false, simFrost: false, simSig: 0 };
+if (location.protocol.startsWith('http')) {
+  const es = new EventSource('/events');
+  es.onerror = () => { IN.bridge = false; };
+  es.onmessage = ev => {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === 'bridge') { IN.bridge = msg.status === 'connected'; return; }
+    if (msg.type !== 'packet') return;
+    const d = msg.data;
+    if (d.eSense) { IN.att = d.eSense.attention ?? IN.att; IN.last = performance.now(); }
+    if ('poorSignalLevel' in d) { IN.poor = d.poorSignalLevel; IN.last = performance.now(); }
+  };
+}
+const headsetLive = () => !IN.space && performance.now() - IN.last < 3000 && IN.poor != null;
+function reading() {
+  if (headsetLive()) {
+    const ok = IN.poor < 200 && IN.att != null;
+    return { att: ok ? IN.att : null, poor: IN.poor, q: IN.poor >= 200 ? 0 : clamp(1 - IN.poor / 200, 0, 1) };
+  }
+  const poor = IN.simFrost ? 120 : Math.round((1 - IN.simSig) * 120);   // frost clears as the simulated headset settles
+  return { att: IN.simAtt, poor, q: 1 - poor / 200 };
+}
+
+// ---------- state ----------
+let S, P, C, N, ctx;
+function newNight() {
+  S = {
+    stage: 'night', tide: 0, T: 0, stageT: 0, paused: false, theme: null,
+    boatsHome: 0,
+    beam: { level: 0, aim: DEFAULT_AIM, aboveSince: null, steady: false, count: 0, flareUntil: 0, flare: 0, lowSince: 0, eff: 0 },
+    dens: 0.72,
+    guide: { text: '', until: 0 },
+  };
+  N = bakeNoise(1 + Math.floor(Math.random() * 900));
+  setStage('night');
+}
+
+// ---------- palette ----------
+const palCache = {};
+function palette(theme) {
+  if (!palCache[theme]) {
+    const p = LK.pal(theme), rgb = {};
+    LK.KEYS.forEach(k => { rgb[k] = LK.parse(p[k]); });
+    palCache[theme] = { p, rgb };
+  }
+  return palCache[theme];
+}
+const themeFor = () => CFG.theme;
+function applyTheme(theme) {
+  if (theme === S.theme) return;
+  S.theme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  ({ p: P, rgb: C } = palette(theme));
+  drawIcons();
+}
+
+// ---------- stages ----------
+const STAGE_NAME = { night: 'The harbour' };
+function say(text, secs) { S.guide.text = text; S.guide.until = S.T + (secs || 5); }
+
+function setStage(stage) {
+  S.stage = stage; S.stageT = 0;
+  applyTheme(themeFor(stage));
+  S.guide.until = 0; S.beam.lowSince = S.T;
+  updateBar();
+}
+
+// ---------- beam (same rules as harbour.html) ----------
+function beamTarget(r) {
+  if (r.att == null) return 0;
+  const a = r.att / 100, th = CFG.threshold / 100;
+  return a < th ? 0.08 * a / th : 0.12 + 0.88 * Math.min(1, (a - th) / Math.max(0.01, 1 - th));
+}
+function updateBeam(r, dt) {
+  const B = S.beam, T = S.T;
+  B.level += (beamTarget(r) - B.level) * ease(dt, CFG.easeSec / 3);
+  const counting = S.stage === 'night';
+  const flaring = T < B.flareUntil;
+  const above = r.att != null && r.att >= CFG.threshold;
+  if (!above || !counting) { B.aboveSince = null; B.steady = false; }
+  else {
+    B.aboveSince ??= T;
+    if (!B.steady && T - B.aboveSince >= CFG.holdSec) {
+      B.steady = true;
+      if (!flaring && ++B.count >= CFG.steadyForFlare) { B.flareUntil = T + CFG.flareSec; say('A flare! The whole bay is lit.', 5); }
+      else if (!flaring) say('A steady beam! See the sparkles?', 4);
+    }
+  }
+  if (!flaring && B.count >= CFG.steadyForFlare && T >= B.flareUntil) B.count = 0;
+  B.flare += ((T < B.flareUntil ? 1 : 0) - B.flare) * ease(dt, 1.2);   // slow bloom, never a flash
+  B.lowSince = above ? T : B.lowSince;
+
+  // effective level the scene draws with
+  let eff = B.level;
+  B.eff = eff + (1 - eff) * B.flare;
+
+  const target = DEFAULT_AIM;
+  B.aim += (target - B.aim) * ease(dt, 0.6);
+}
+function makeLit() {
+  const a = S.beam.eff, half = 0.035 + 0.3 * a, len = W * (0.32 + 0.78 * a), fade = clamp((a - 0.08) / 0.17, 0, 1),
+    gr = 4 + 10 * a, aim = S.beam.aim, steady = S.beam.steady && S.beam.flare < 0.5;
+  const fn = function (x, y) {
+    const dx = x - LAMP.x, dy = y - LAMP.y, dist = Math.sqrt(dx * dx + dy * dy);
+    let L = 0, ang = Math.atan2(dy, dx) - aim;
+    while (ang > Math.PI) ang -= 2 * Math.PI; while (ang < -Math.PI) ang += 2 * Math.PI;
+    if (dist > 1 && Math.abs(ang) < half && dist < len) {
+      const edge = 1 - Math.abs(ang) / half, fall = 1 - dist / len;
+      L = Math.min(1, Math.pow(edge, 0.45) * (0.3 + 0.7 * Math.pow(fall, 0.6))) * fade;
+      if (steady) L = Math.min(1, L * 1.25);
+    }
+    const gl = Math.max(0, 1 - dist / gr);
+    fn.gl = gl;
+    return Math.max(L, gl);
+  };
+  return fn;
+}
+let lit = () => 0;   // replaced each frame by makeLit()
+
+// ---------- main update ----------
+function update(dt) {
+  const target = IN.space ? 88 : 22;                  // simulator: hold Space to raise attention
+  IN.simAtt += (target - IN.simAtt) * ease(dt, 1.2);
+  IN.simSig = Math.min(1, IN.simSig + dt / 5);        // simulated headset settles over ~5 s
+  const r = reading();
+  S.reading = r;
+  updateBeam(r, dt);
+  lit = makeLit();
+
+}
+
+// ---------- rendering ----------
+let cr = 0, cg = 0, cb = 0;
+const set = c => { cr = c[0]; cg = c[1]; cb = c[2]; };
+const mixT = (c, t) => { cr += (c[0] - cr) * t; cg += (c[1] - cg) * t; cb += (c[2] - cb) * t; };
+const mixRGB = (A, B, t) => [A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t];
+const Larr = new Float32Array(W * H), Garr = new Float32Array(W * H);
+let img = null;
+
+function look() {
+  const st = S.stage, phase = st === 'night' ? 'tide' : st;
+  return { phase, dawn: phase === 'dawn',
+    dens: 0.72 * ({ lighting: 1, calm: 0.55, tide: 1, dawn: 0.22 }[phase] || 1),
+    starTh: phase === 'calm' || phase === 'dawn' ? 0.982 : 0.99 };
+}
+
+function renderBackground(now) {
+  const L0 = look(), fl = S.beam.flare, fm = 1 - 0.65 * fl, steady = S.beam.steady && fl < 0.5;
+  S.dens += (L0.dens - S.dens) * 0.02;                 // fog lifts / thickens gradually
+  const dens = S.dens;
+  let skyTop = C['sky-deep'], skyBot = C.sky;
+  if (L0.dawn) { skyTop = mixRGB(C.sky, C['sky-deep'], 0.4); skyBot = mixRGB(C.sky, C.lamp, 0.5); }
+  const seaTop = L0.dawn ? mixRGB(C.sea, C.lamp, 0.18) : C.sea, sunX = W * 0.72, sunR = 10;
+  const crestOff = Math.floor(now * 1.2) % 490;
+
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x; Larr[i] = lit(x, y); Garr[i] = lit.gl || 0;
+  }
+  const d = img.data;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x, b = bay(x, y);
+    if (y < HZ) {
+      const t = y / HZ; set(t > b ? skyBot : skyTop);
+      if (L0.dawn && t * 2 - 1 > b) { set(skyBot); mixT(C.beam, 0.25); }
+      if (N.star[i] > L0.starTh && y < HZ - 5) set(C.star);
+      if (L0.dawn) { const sd = Math.hypot(x - sunX, (y - HZ) * 1.1); if (sd < sunR) set(sd < sunR - 2 ? C.beam : C['beam-core']); }
+    } else {
+      const row = y - HZ, ts = row / (H - HZ);
+      set(ts > b ? C['sea-deep'] : seaTop);
+      const xx = x + 700 + (((row / 5) | 0) % 2 ? crestOff : -crestOff);
+      if (row % 5 === 2 && ((xx + row * 3) % 7) < 3 && hash(Math.floor((xx + row * 3) / 7), row, 11) > 0.62) set(row < 10 ? C.crest : C['sea-light']);
+      if (L0.dawn && Math.abs(x - sunX) < sunR * (1 - ts) && row % 3 !== 0 && hash(x >> 1, row, 6) > 0.4) set(C.beam);
+    }
+    const L = Larr[i];
+    // fog
+    if (CFG.fog === 'bands') {
+      const f = clamp(dens * (N.nb[i] * 1.6 - 0.35) + N.depth[i] * dens, 0, 1) * clamp(1 - 1.35 * L, 0, 1) * fm;
+      const fu = y > 0 ? clamp(dens * (N.nb[i - W] * 1.6 - 0.35) + N.depth[i - W] * dens, 0, 1) * clamp(1 - 1.35 * Larr[i - W], 0, 1) * fm : 0;
+      if (f > 0.55) set(C['fog-thick']); else if (f > 0.28) set(C.fog);
+      if (f > 0.28 && fu <= 0.28) set(C['fog-thick']);
+    } else {
+      const fogA = clamp(dens * (N.n[i] * 1.5 - 0.3) + N.depth[i] * dens, 0, 1), fv = fogA * clamp(1 - 1.35 * L, 0, 1) * fm;
+      if (CFG.fog === 'clouds') {
+        const m = fv * (0.55 + N.n2[i]);
+        const up = y > 0 ? clamp(dens * (N.n[i - W] * 1.5 - 0.3) + N.depth[i - W] * dens, 0, 1) * clamp(1 - 1.35 * Larr[i - W], 0, 1) * fm * (0.55 + N.n2[i - W]) : 0;
+        if (m > 0.62) set(C['fog-thick']); else if (m > 0.4) set(C.fog);
+        if (m > 0.4 && up <= 0.4) set(C['fog-thick']);
+      } else { const lv = fv * 2; if (lv > b) set(C.fog); if (lv - 1 > b) set(C['fog-thick']); }
+    }
+    // flare: a dithered bloom across the bay
+    if (fl > b) mixT(C.beam, 0.32);
+    // beam light
+    if (L > 0.02) {
+      if (Garr[i] > 0.55) set(C['beam-core']);
+      else {
+        if (L * 1.1 > b) mixT(C.beam, 0.38);
+        if (L * 1.1 - 0.55 > b * 0.6) mixT(C.beam, 0.7);
+        if (steady && L > 0.82 && b < 0.2) set(C['beam-core']);
+      }
+    }
+    const k = i * 4; d[k] = cr; d[k + 1] = cg; d[k + 2] = cb; d[k + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function px(c, x, y, w, h) { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w || 1, h || 1); }
+
+function renderSprites() {
+  const p = P, T = S.T;
+  LK.island(ctx, p, BX, BY);
+  const lampLit = S.beam.eff;
+  LK.lighthouse(ctx, p, BX, BY, CFG.lighthouse, lampLit, frosty());
+
+  // steady-beam sparkles
+  if (S.beam.steady && S.beam.flare < 0.5) {
+    const a = S.beam.eff, half = 0.035 + 0.3 * a, len = W * (0.32 + 0.78 * a);
+    [0.35, 0.55, 0.75].forEach((f, i) => {
+      const gx = Math.round(LAMP.x + Math.cos(S.beam.aim + (i - 1) * half * 0.5) * len * f), gy = Math.round(LAMP.y + Math.sin(S.beam.aim + (i - 1) * half * 0.5) * len * f);
+      px(p['beam-core'], gx, gy - 1); px(p['beam-core'], gx - 1, gy, 3, 1); px(p['beam-core'], gx, gy + 1);
+    });
+  }
+}
+
+const frosty = () => S.reading && S.reading.poor != null && S.reading.poor > CFG.frostAbove;
+
+function render(now) {
+  renderBackground(now);
+  renderSprites();
+}
+
+// ---------- HUD (corners only) ----------
+const setText = (el, t) => { if (el.textContent !== t) el.textContent = t; };
+const setHTML = (el, h) => { if (el._h !== h) { el._h = h; el.innerHTML = h; } };
+function drawIcons() {
+  const b = $('boatIcon'); b.innerHTML = '';
+  b.appendChild(LK.spriteCanvas(9, 5, 4, (c, p) => LK.drawSprite(c, LK.SPRITES.row, 0, 0, p)));
+  const g = $('guideAvatar'); g.innerHTML = '';
+  g.appendChild(LK.spriteCanvas(14, 21, 4, (c, p) => LK.avatar(c, 1, 1, p, {})));
+  $('bubble')._h = null;
+}
+function frostIcon() {
+  const cv = LK.spriteCanvas(10, 9, 3, (c, p) => {
+    LK.px(c, p.outline, 0, 0, 10, 9); LK.px(c, p.lamp, 1, 1, 8, 7);
+    for (let y = 1; y < 8; y++) for (let x = 1; x < 9; x++) if (y === 1 || x === 1 || x === 8 || (x + y) % 3 === 0) LK.px(c, p.frost, x, y);
+  });
+  return cv;
+}
+
+function guideText() {
+  if (frosty()) return { frost: true, text: 'Lamp is frosty — grown-up, check the headset' };
+  if (S.T < S.guide.until) return { text: S.guide.text };
+  const st = S.stage;
+  if (st === 'night' && S.T - S.beam.lowSince > 8) return { text: 'Sit tall and keep your eyes on the light.' };
+  return null;
+}
+
+function updateHUD() {
+  const st = S.stage, inPlay = st === 'night';
+  setText($('stageName'), st === 'tide' ? `Tide ${S.tide}` : STAGE_NAME[st]);
+  [...$('ticks').children].forEach((el, i) => {
+    const done = i < S.tide - (st === 'tide' ? 1 : 0);
+    el.classList.toggle('on', done);
+    el.firstChild.style.width = (!done && st === 'tide' && i === S.tide - 1) ? Math.min(100, S.stageT / CFG.durations.tide * 100).toFixed(1) + '%' : '0';
+  });
+  $('hudTR').classList.toggle('hidden', !inPlay);
+  const n = S.beam.flare > 0.5 ? 3 : S.beam.count;
+  document.querySelectorAll('.pip').forEach((el, i) => el.classList.toggle('on', i < n));
+  setText($('homeText'), `${S.boatsHome} home`);
+  const g = guideText();
+  $('hudBR').classList.toggle('hidden', !g);
+  if (g) setHTML($('bubble'), g.frost ? `<span class="frost" id="frostWrap"></span>` : escapeHTML(g.text));
+  if (g && g.frost && !$('frostWrap').childElementCount) { $('frostWrap').appendChild(frostIcon()); $('frostWrap').append(g.text); }
+  $('pause').classList.toggle('hidden', !S.paused);
+}
+const escapeHTML = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ---------- Pilot's controls bar ----------
+const kb = k => `<kbd>${k}</kbd>`;
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function updateBar() {
+  const st = S.stage;
+  const HELP = {
+    night: 'The harbour: the beam follows the Keeper\'s attention. Hold it above the threshold for a steady beam. Three steady beams make a flare.',
+  };
+  $('help').textContent = HELP[st];
+  const keys = [];
+  if (st === 'night') keys.push(`${kb('Esc')} pause`);
+  if (!headsetLive()) keys.push(`${kb('Space')} hold for simulated attention`, `${kb('F')} test frosty lamp`);
+    setHTML($('keys'), keys.map(k => `<span>${k}</span>`).join(''));
+  const pause = $('pauseBtn');
+  pause.classList.toggle('hidden', !(st === 'night'));
+  pause.textContent = S.paused ? 'Carry on' : 'Pause';
+}
+let lastLive = null;
+function updateBarLive() {
+  const live = headsetLive();
+  if (live !== lastLive) { lastLive = live; updateBar(); }
+  setText($('src'), live ? 'Headset connected' : IN.space ? 'Simulated attention (Space held)' : IN.bridge ? 'Bridge on, no headset data: simulator' : 'Simulator (no headset)');
+}
+
+// ---------- keys ----------
+addEventListener('keydown', e => {
+  const tag = e.target.tagName, inInput = tag === 'INPUT';
+  if (e.key === ' ') { if (inInput) return; IN.space = true; e.preventDefault(); return; }
+  if (e.key === 'Escape' && (S.stage === 'night')) { S.paused = !S.paused; updateBar(); return; }
+  if ((e.key === 'f' || e.key === 'F') && !headsetLive()) { IN.simFrost = !IN.simFrost; return; }
+});
+addEventListener('keyup', e => {
+  if (e.key === ' ') { IN.space = false; if (e.target.tagName === 'BUTTON') e.preventDefault(); }
+});
+addEventListener('blur', () => { IN.space = false; });
+$('pauseBtn').onclick = () => { S.paused = !S.paused; updateBar(); };
+
+// ---------- layout + loop ----------
+function fit() {
+  const s = Math.max(1, Math.min(Math.floor((innerWidth - 32) / W), Math.floor((innerHeight - $('bar').offsetHeight - 48) / H)));
+  const cv = $('c');
+  cv.style.width = W * s + 'px'; cv.style.height = H * s + 'px';
+  $('bar').style.width = W * s + 'px';
+}
+addEventListener('resize', fit);
+
+let prev = null;
+function frame(ts) {
+  const now = ts / 1000, dt = prev == null ? 0 : Math.min(0.1, now - prev); prev = now;
+  if (!S.paused) { S.T += dt; S.stageT += dt; update(dt); }
+  render(now);
+  updateHUD(); updateBarLive();
+  requestAnimationFrame(frame);
+}
+
+LK.ready(() => {
+  const cv = $('c'); cv.width = W; cv.height = H;
+  ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  img = ctx.createImageData(W, H);
+  newNight();
+  S.reading = reading();
+  fit();
+  requestAnimationFrame(frame);
+});
+</script>
+</body>
+</html>
