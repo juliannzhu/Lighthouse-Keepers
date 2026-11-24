@@ -46,7 +46,9 @@
   .card ol, .card ul { margin: var(--space-2) 0; padding-left: var(--space-6); }
   .cap { color: var(--ink-muted); }
   label.set { display: block; margin: var(--space-4) 0 var(--space-1); font-weight: 700; }
+  label.check { display: flex; gap: var(--space-2); align-items: center; margin-top: var(--space-4); }
   input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
   .ends { display: flex; justify-content: space-between; }
   .seg { display: flex; gap: var(--space-1); }
   .seg button { flex: 1; font: inherit; padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);
@@ -130,6 +132,7 @@ const CFG = {
   // Palette per stage. The Storm Ship climax uses Deep Fjord.
   stagePalettes: { lighting: 'harbour-night', calm: 'sea-glass', tide: 'sea-glass', rest: 'sea-glass',
                    storm: 'deep-fjord', dawn: 'harbour-night', end: 'harbour-night' },
+  highContrastTheme: 'storm-ink',        // accessibility switch overrides every stage
   lighthouse: 'classic', fog: 'bands',   // fog: bands | dither | clouds
   threshold: 45, holdSec: 3,             // attention 0–100; seconds above threshold for a steady beam
   easeSec: 1, frostAbove: 50, steadyForFlare: 3, flareSec: 10,
@@ -225,7 +228,7 @@ function newNight() {
     boats: [], sel: null, rocks: [], buoys: [], channel: null, passengers: 0, boatsHome: 0,
     beam: { level: 0, aim: DEFAULT_AIM, aboveSince: null, steady: false, count: 0, flareUntil: 0, flare: 0, lowSince: 0, eff: 0 },
     dens: 0.72, hist: [], histT: 0, tideStats: null, pending: { threshold: CFG.threshold, holdSec: CFG.holdSec },
-    guide: { text: '', until: 0 }, nextSpawn: 0,
+    highContrast: store.get('highContrast', false), guide: { text: '', until: 0 }, nextSpawn: 0,
     channelOnce: false, summaryShown: false, dawnPick: null, snap: null, transT0: 0,
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
@@ -244,7 +247,7 @@ function palette(theme) {
   }
   return palCache[theme];
 }
-const themeFor = stage => CFG.stagePalettes[stage];
+const themeFor = stage => S.highContrast ? CFG.highContrastTheme : CFG.stagePalettes[stage];
 function applyTheme(theme) {
   if (theme === S.theme) return;
   if (S.theme && ctx) { S.snap = ctx.getImageData(0, 0, W, H); S.transT0 = performance.now(); }
@@ -833,12 +836,15 @@ function showCard(kind) {
     <div class="ends parent-caption cap"><span>Easier</span><span>Harder</span></div>
     <label class="set parent-body">Hold time for a steady beam</label>
     <div class="seg" id="hold"><button data-s="2">2 s</button><button data-s="3">3 s</button><button data-s="4">4 s</button></div>
+    <label class="check parent-body"><input type="checkbox" id="hc"> High-contrast colours (Storm Ink)</label>
     <p class="parent-caption cap">Changes apply when the next ${kind === 'lighting' ? 'stage' : 'tide'} starts, so the Keeper isn't interrupted.</p>
     <div class="go"><button class="lk-btn" id="cardGo">${kind === 'lighting' ? 'Start the night' : `Start tide ${S.tide + 1}`}</button><span class="parent-caption cap">or press ${kb('Enter')}</span></div>`;
   $('th').value = S.pending.threshold; $('thVal').textContent = S.pending.threshold;
   $('th').oninput = e => { S.pending.threshold = +e.target.value; $('thVal').textContent = S.pending.threshold; drawGraph(); };
   const hb = [...$('hold').children], mark = () => hb.forEach(b => b.classList.toggle('on', +b.dataset.s === S.pending.holdSec));
   hb.forEach(b => b.onclick = () => { S.pending.holdSec = +b.dataset.s; mark(); }); mark();
+  $('hc').checked = S.highContrast;
+  $('hc').onchange = e => { S.highContrast = e.target.checked; store.set('highContrast', S.highContrast); applyTheme(themeFor(S.stage)); drawGraph(); };
   $('cardGo').onclick = () => nextStage();
   drawGraph();
 }
