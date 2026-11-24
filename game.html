@@ -15,7 +15,7 @@
   body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: var(--space-4); padding: var(--space-4); transition: background 1.5s; }
   .hidden { display: none !important; }
-  .scene, .lk-btn { font-variant-ligatures: none; }
+  .scene, .dawn, .lk-btn { font-variant-ligatures: none; }
 
   /* ---------- Keeper's screen: scene + HUD (copied from the design system's Game HUD) ---------- */
   .scene { position: relative; }
@@ -61,6 +61,14 @@
   .legend i { width: 18px; height: 3px; display: inline-block; vertical-align: middle; margin-right: 6px; }
   .go { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
 
+  /* Dawn summary: child-facing pixel panel */
+  .dawn { position: absolute; top: var(--space-4); right: var(--space-4); width: min(460px, 50%);
+    max-height: calc(100% - 32px); overflow: auto; font-family: var(--font-pixel); }
+  .dawn h1 { margin: 0 0 var(--space-1); }
+  .dawn .big { font-size: 22px; line-height: 28px; margin: 0 0 var(--space-1); }
+  .dawn .up { color: var(--success); font-size: 18px; line-height: 24px; display: flex; gap: var(--space-2); margin: 0 0 var(--space-2); }
+  .dawn .same { font-size: 18px; line-height: 24px; margin: 0 0 var(--space-2); }
+  .btns { margin-top: var(--space-2); }
 
   .pause { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; font-family: var(--font-pixel); }
 
@@ -89,6 +97,7 @@
   <div class="hud br" id="hudBR"><span id="guideAvatar"></span><div class="lk-panel bubble" id="bubble" aria-live="polite"></div></div>
 
   <div class="card hidden" id="card"></div>
+  <div class="dawn lk-panel hidden" id="dawn"></div>
   <div class="pause lk-panel hidden" id="pause"><div class="game-heading">Paused</div><div class="small">Press Esc to carry on.</div></div>
 </div>
 
@@ -111,7 +120,7 @@
 const CFG = {
   // Palette per stage. The Storm Ship climax uses Deep Fjord.
   stagePalettes: { lighting: 'harbour-night', calm: 'sea-glass', tide: 'sea-glass', rest: 'sea-glass',
-                   storm: 'deep-fjord', end: 'harbour-night' },
+                   storm: 'deep-fjord', dawn: 'harbour-night', end: 'harbour-night' },
   lighthouse: 'classic', fog: 'bands',   // fog: bands | dither | clouds
   threshold: 45, holdSec: 3,             // attention 0–100; seconds above threshold for a steady beam
   easeSec: 1, frostAbove: 50, steadyForFlare: 3, flareSec: 10,
@@ -166,6 +175,12 @@ function bakeNoise(seed) {
   return N;
 }
 
+// ---------- storage (family's own past nights) ----------
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('lk.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('lk.' + k, JSON.stringify(v)); } catch (e) {} },
+};
+
 // ---------- attention input: headset over the bridge, or the Space-bar simulator ----------
 const IN = { att: null, poor: null, last: 0, bridge: false, simAtt: 20, space: false, simFrost: false, simSig: 0 };
 if (location.protocol.startsWith('http')) {
@@ -200,10 +215,11 @@ function newNight() {
     beam: { level: 0, aim: DEFAULT_AIM, aboveSince: null, steady: false, count: 0, flareUntil: 0, flare: 0, lowSince: 0, eff: 0 },
     dens: 0.72, hist: [], histT: 0, tideStats: null, pending: { threshold: CFG.threshold, holdSec: CFG.holdSec },
     guide: { text: '', until: 0 }, nextSpawn: 0,
-    channelOnce: false, snap: null, transT0: 0,
+    channelOnce: false, summaryShown: false, snap: null, transT0: 0,
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
   makeNightRocks();
+  $('dawn').classList.add('hidden');
   setStage('lighting');
 }
 
@@ -316,7 +332,7 @@ function startStorm() {
 }
 
 // ---------- stages ----------
-const STAGE_NAME = { lighting: 'Lamp lighting', calm: 'Calm waters', rest: 'Rest', storm: 'Storm ship', end: 'Dawn' };
+const STAGE_NAME = { lighting: 'Lamp lighting', calm: 'Calm waters', rest: 'Rest', storm: 'Storm ship', dawn: 'Dawn', end: 'Dawn' };
 function say(text, secs) { S.guide.text = text; S.guide.until = S.T + (secs || 5); }
 
 function setStage(stage) {
@@ -338,6 +354,10 @@ function setStage(stage) {
   }
   if (stage === 'rest') say('Rest time. Stretch your arms and take a slow breath.', 1e9);
   if (stage === 'storm') { startStorm(); say('A big ship is in the storm. Hold the light steady to find its channel.', 8); }
+  if (stage === 'dawn') {
+    S.boats.forEach(b => { if (b.state === 'sea') b.state = 'towing'; });
+    say('The sun is coming up. The last boats are being towed home.', 8);
+  }
   if (stage === 'end') say('Goodnight, keepers. See you tomorrow night.', 1e9);
   updateBar();
 }
@@ -348,7 +368,11 @@ function nextStage() {
     case 'calm': return setStage('tide');
     case 'tide': return setStage(S.tide < CFG.tides ? 'rest' : 'storm');
     case 'rest': return setStage('tide');
-    case 'storm': return setStage('end');
+    case 'storm': return setStage('dawn');
+    case 'dawn':
+      if (S.summaryShown) { $('dawn').classList.add('hidden'); return setStage('end'); }
+      S.boats.forEach(b => { if (b.state === 'towing') { b.x = b.slotX || DOCK.x - 6; b.y = DOCK.y + 4; dockBoat(b, true); } });
+      return showDawn();
     case 'end': return newNight();
   }
 }
@@ -382,7 +406,7 @@ function updateBeam(r, dt) {
   // effective level the scene draws with
   let eff = B.level;
   if (S.stage === 'lighting') eff = 0.04 + 0.08 * r.q;
-  if (S.stage === 'end') eff = 0.25;
+  if (S.stage === 'dawn' || S.stage === 'end') eff = 0.25;
   B.eff = eff + (1 - eff) * B.flare;
 
   // the beam turns slowly toward the boat the Pilot has marked
@@ -450,7 +474,7 @@ function dockBoat(b, quiet) {
   b.left = false;
   S.passengers += b.passengers; S.boatsHome++;
   if (S.tideStats) S.tideStats.boats++;
-  if (!quiet) say(b.type === 'storm' ? 'The storm ship is home! Every passenger is safe.' : 'A boat is home!', 4);
+  if (!quiet && S.stage !== 'dawn') say(b.type === 'storm' ? 'The storm ship is home! Every passenger is safe.' : 'A boat is home!', 4);
   autoSelect();
 }
 function updateBoats(dt) {
@@ -458,8 +482,13 @@ function updateBoats(dt) {
   for (const b of S.boats) {
     if (b.state === 'docked') {
       b.x += (b.slotX - b.x) * ease(dt, 0.4); b.y += (b.slotY - b.y) * ease(dt, 0.4);
-      const stays = S.stage === 'end' || b.type === 'storm';
+      const stays = S.stage === 'dawn' || S.stage === 'end' || b.type === 'storm';
       if (!stays && S.T - b.dockT > CFG.dockStaySec) b.state = 'gone';
+    } else if (b.state === 'towing') {
+      const tx = DOCK.x - 6, ty = DOCK.y + 4, d = Math.hypot(tx - b.x, ty - b.y), step = 30 * dt;
+      b.left = tx < b.x;
+      if (d <= step + 1) dockBoat(b, true);
+      else { b.x += (tx - b.x) / d * step; b.y += (ty - b.y) / d * step; }
     }
   }
   S.boats = S.boats.filter(b => b.state !== 'gone');
@@ -499,6 +528,10 @@ function update(dt) {
     if ((ship && ship.state === 'docked' && S.T - ship.dockT > 4) || S.stageT >= CFG.durations.stormMax) nextStage();
   }
   updateBoats(dt);
+  if (S.stage === 'dawn' && !S.summaryShown) {
+    const towing = S.boats.some(b => b.state === 'towing');
+    if ((!towing && S.stageT > 4) || S.stageT > 14) showDawn();
+  }
 }
 
 // ---------- rendering ----------
@@ -613,7 +646,7 @@ function renderSprites() {
     // the Pilot's route: a dashed wake behind the boat
     b.trail.forEach((t, k) => { if (k % 5 < 3) px(p.route, t[0], t[1]); });
     const spr = LK.SPRITES[b.type], x0 = Math.round(b.x - b.w / 2), y0 = Math.round(b.y - b.h / 2);
-    const inLight = b.state !== 'sea' || boatLit(b);
+    const inLight = b.state !== 'sea' || S.stage === 'dawn' || boatLit(b);
     LK.drawSprite(ctx, spr, x0, y0, p, inLight ? { flip: b.left } : { dim: 0.6, dimTo: 'fog', flip: b.left });
     if (!inLight) { px(p.lamp, x0 + Math.floor(b.w / 2), y0 - 2); px(LK.mix(p.lamp, p.fog, 0.5), x0 + Math.floor(b.w / 2), y0 - 1); }
     for (let f = 0; f < b.w; f += 3) px(p.crest, x0 + f, y0 + b.h);
@@ -631,7 +664,7 @@ function renderSprites() {
       px(p['beam-core'], gx, gy - 1); px(p['beam-core'], gx - 1, gy, 3, 1); px(p['beam-core'], gx, gy + 1);
     });
   }
-  if (S.stage === 'end') {
+  if (S.stage === 'dawn' || S.stage === 'end') {
     LK.drawSprite(ctx, LK.SPRITES.gull, Math.round(W * 0.48), Math.round(H * 0.16), p);
     LK.drawSprite(ctx, LK.SPRITES.gull, Math.round(W * 0.56), Math.round(H * 0.22), p);
   }
@@ -691,7 +724,7 @@ function updateHUD() {
   const st = S.stage, inPlay = st === 'calm' || st === 'tide' || st === 'storm';
   setText($('stageName'), st === 'tide' ? `Tide ${S.tide}` : STAGE_NAME[st]);
   [...$('ticks').children].forEach((el, i) => {
-    const done = i < S.tide - (st === 'tide' ? 1 : 0) || st === 'storm' || st === 'end';
+    const done = i < S.tide - (st === 'tide' ? 1 : 0) || st === 'storm' || st === 'dawn' || st === 'end';
     el.classList.toggle('on', done);
     el.firstChild.style.width = (!done && st === 'tide' && i === S.tide - 1) ? Math.min(100, S.stageT / CFG.durations.tide * 100).toFixed(1) + '%' : '0';
   });
@@ -700,7 +733,7 @@ function updateHUD() {
   document.querySelectorAll('.pip').forEach((el, i) => el.classList.toggle('on', i < n));
   $('hudBL').classList.toggle('hidden', st === 'lighting' || st === 'calm');
   setText($('homeText'), `${S.boatsHome} home`);
-  const g = guideText();
+  const g = (st === 'dawn' && S.summaryShown) ? null : guideText();
   $('hudBR').classList.toggle('hidden', !g);
   if (g) setHTML($('bubble'), g.frost ? `<span class="frost" id="frostWrap"></span>` : escapeHTML(g.text));
   if (g && g.frost && !$('frostWrap').childElementCount) { $('frostWrap').appendChild(frostIcon()); $('frostWrap').append(g.text); }
@@ -719,6 +752,7 @@ function updateBar() {
     tide: 'Steer the marked boat to the dock beside the lighthouse. Boats move only in the light and wait in the dark.',
     rest: 'Rest: change the settings if you like, then start the next tide.',
     storm: 'The storm ship: a steady beam shows the buoys. Steer the big ship between them to the dock. Rocks block the way outside the channel.',
+    dawn: 'Dawn: the last boats are towed home. Read the team result together.',
     end: 'The night is over. Start a new night whenever you are ready.',
   };
   $('help').textContent = HELP[st];
@@ -732,7 +766,8 @@ function updateBar() {
   keys.push('<span id="timeLeft"></span>', '<span id="boatStatus"></span>');
   setHTML($('keys'), keys.map(k => `<span>${k}</span>`).join(''));
   const main = $('mainBtn'), pause = $('pauseBtn');
-  main.textContent = { lighting: 'Start the night', rest: `Start tide ${S.tide + 1}`, end: 'Start a new night' }[st] || 'Skip stage';
+  main.textContent = { lighting: 'Start the night', rest: `Start tide ${S.tide + 1}`, end: 'Start a new night' }[st] || (st === 'dawn' ? 'Show the summary' : 'Skip stage');
+  main.classList.toggle('hidden', st === 'dawn' && S.summaryShown);
   pause.classList.toggle('hidden', !(st === 'calm' || st === 'tide' || st === 'storm'));
   pause.textContent = S.paused ? 'Carry on' : 'Pause';
 }
@@ -820,6 +855,27 @@ function drawGraph() {
     started ? g.lineTo(x, y) : g.moveTo(x, y); started = true;
   }
   g.stroke();
+}
+
+// ---------- Dawn: team summary ----------
+function showDawn() {
+  if (S.summaryShown) return;
+  S.summaryShown = true;
+  const n = S.passengers, last = store.get('lastNight', null);
+  store.set('lastNight', n);
+  const cmp = last == null ? `<p class="same">Your first night at the harbour.</p>` :
+    n > last ? `<p class="up"><span aria-hidden="true">▲</span> ${n - last} more than last night</p>` :
+    n === last ? `<p class="same">Just like last night.</p>` : `<p class="same">Every boat came home safely.</p>`;
+  const d = $('dawn');
+  d.innerHTML = `
+    <h1 class="game-title">Dawn!</h1>
+    <p class="big">Together you brought ${n} passenger${n === 1 ? '' : 's'} home.</p>
+    ${cmp}
+    <div class="btns"><button class="lk-btn" id="goodnight">Goodnight</button></div>`;
+  d.classList.remove('hidden');
+  $('goodnight').onclick = () => { d.classList.add('hidden'); setStage('end'); };
+  updateBar();
+  $('goodnight').focus({ preventScroll: true });
 }
 
 // ---------- keys ----------
