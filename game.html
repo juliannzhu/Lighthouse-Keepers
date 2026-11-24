@@ -104,6 +104,7 @@ const CFG = {
   lighthouse: 'classic', fog: 'bands',   // fog: bands | dither | clouds
   threshold: 45, holdSec: 3,             // attention 0–100; seconds above threshold for a steady beam
   easeSec: 1, frostAbove: 50, steadyForFlare: 3, flareSec: 10,
+  durations: { calm: 60 },
 };
 
 const $ = id => document.getElementById(id);
@@ -205,7 +206,7 @@ function applyTheme(theme) {
 }
 
 // ---------- stages ----------
-const STAGE_NAME = { lighting: 'Lamp lighting', night: 'The harbour' };
+const STAGE_NAME = { lighting: 'Lamp lighting', calm: 'Calm waters', night: 'The harbour' };
 function say(text, secs) { S.guide.text = text; S.guide.until = S.T + (secs || 5); }
 
 function setStage(stage) {
@@ -213,12 +214,16 @@ function setStage(stage) {
   applyTheme(themeFor(stage));
   showCard(stage === 'lighting');
   S.guide.until = 0; S.beam.lowSince = S.T;
+  if (stage === 'calm') {
+    say('Look at the lighthouse. Sit tall and watch the beam grow.', 8);
+  }
   updateBar();
 }
 
 function nextStage() {
   switch (S.stage) {
-    case 'lighting': return setStage('night');
+    case 'lighting': return setStage('calm');
+    case 'calm': return setStage('night');
   }
 }
 
@@ -231,7 +236,7 @@ function beamTarget(r) {
 function updateBeam(r, dt) {
   const B = S.beam, T = S.T;
   B.level += (beamTarget(r) - B.level) * ease(dt, CFG.easeSec / 3);
-  const counting = S.stage === 'night';
+  const counting = S.stage === 'calm' || S.stage === 'night';
   const flaring = T < B.flareUntil;
   const above = r.att != null && r.att >= CFG.threshold;
   if (!above || !counting) { B.aboveSince = null; B.steady = false; }
@@ -285,6 +290,7 @@ function update(dt) {
   updateBeam(r, dt);
   lit = makeLit();
 
+  if (S.stage === 'calm' && S.stageT >= CFG.durations.calm) nextStage();
 }
 
 // ---------- rendering ----------
@@ -404,17 +410,19 @@ function frostIcon() {
   return cv;
 }
 
+const CALM_LINES = ['Sit tall, feet flat, hands resting in your lap.', 'Keep your eyes on the light.', 'Breathe slowly and watch the beam grow.', 'Shoulders soft, back tall, like a lighthouse.'];
 function guideText() {
   if (frosty()) return { frost: true, text: 'Lamp is frosty — grown-up, check the headset' };
   if (S.T < S.guide.until) return { text: S.guide.text };
   const st = S.stage;
   if (st === 'lighting') return { text: S.reading && S.reading.q >= 0.75 ? 'The lamp is ready. Sit tall and keep your eyes on the light.' : 'Sit tall. The lamp is warming up.' };
+  if (st === 'calm') return { text: CALM_LINES[Math.floor(S.stageT / 12) % CALM_LINES.length] };
   if (st === 'night' && S.T - S.beam.lowSince > 8) return { text: 'Sit tall and keep your eyes on the light.' };
   return null;
 }
 
 function updateHUD() {
-  const st = S.stage, inPlay = st === 'night';
+  const st = S.stage, inPlay = st === 'calm' || st === 'night';
   setText($('stageName'), st === 'tide' ? `Tide ${S.tide}` : STAGE_NAME[st]);
   [...$('ticks').children].forEach((el, i) => {
     const done = i < S.tide - (st === 'tide' ? 1 : 0);
@@ -424,7 +432,7 @@ function updateHUD() {
   $('hudTR').classList.toggle('hidden', !inPlay);
   const n = S.beam.flare > 0.5 ? 3 : S.beam.count;
   document.querySelectorAll('.pip').forEach((el, i) => el.classList.toggle('on', i < n));
-  $('hudBL').classList.toggle('hidden', st === 'lighting');
+  $('hudBL').classList.toggle('hidden', st === 'lighting' || st === 'calm');
   setText($('homeText'), `${S.boatsHome} home`);
   const g = guideText();
   $('hudBR').classList.toggle('hidden', !g);
@@ -441,19 +449,21 @@ function updateBar() {
   const st = S.stage;
   const HELP = {
     lighting: 'Lamp lighting: put the headset on the Keeper. The frost on the lamp clears as the signal settles. Start the night when the lamp is clear.',
+    calm: 'Calm waters: no boats yet. Let the Keeper see the beam respond. Try saying "Look how far the beam reaches."',
     night: 'The harbour: the beam follows the Keeper\'s attention. Hold it above the threshold for a steady beam. Three steady beams make a flare.',
   };
   $('help').textContent = HELP[st];
   const keys = [];
   if (st === 'lighting') keys.push(`${kb('Enter')} start the night`);
-  if (st === 'night') keys.push(`${kb('Esc')} pause`);
+  if (st === 'calm' || st === 'night') keys.push(`${kb('Esc')} pause`);
   if (st !== 'night') keys.push(`${kb('N')} skip to the next stage`);
   if (!headsetLive()) keys.push(`${kb('Space')} hold for simulated attention`, `${kb('F')} test frosty lamp`);
-    setHTML($('keys'), keys.map(k => `<span>${k}</span>`).join(''));
+  keys.push('<span id="timeLeft"></span>');
+  setHTML($('keys'), keys.map(k => `<span>${k}</span>`).join(''));
   const main = $('mainBtn'), pause = $('pauseBtn');
   main.textContent = { lighting: 'Start the night', }[st] || 'Skip stage';
   main.classList.toggle('hidden', st === 'night');
-  pause.classList.toggle('hidden', !(st === 'night'));
+  pause.classList.toggle('hidden', !(st === 'calm' || st === 'night'));
   pause.textContent = S.paused ? 'Carry on' : 'Pause';
 }
 let lastLive = null;
@@ -461,6 +471,8 @@ function updateBarLive() {
   const live = headsetLive();
   if (live !== lastLive) { lastLive = live; updateBar(); }
   setText($('src'), live ? 'Headset connected' : IN.space ? 'Simulated attention (Space held)' : IN.bridge ? 'Bridge on, no headset data: simulator' : 'Simulator (no headset)');
+  const st = S.stage, tl = $('timeLeft');
+  if (tl) setText(tl, st === 'calm' ? `Calm waters: ${mmss(Math.max(0, CFG.durations.calm - S.stageT))} left` : '');
 }
 
 // ---------- parent card (lamp lighting) ----------
@@ -497,7 +509,7 @@ function updateCardLive() {
 addEventListener('keydown', e => {
   const tag = e.target.tagName, inInput = tag === 'INPUT';
   if (e.key === ' ') { if (inInput) return; IN.space = true; e.preventDefault(); return; }
-  if (e.key === 'Escape' && (S.stage === 'night')) { S.paused = !S.paused; updateBar(); return; }
+  if (e.key === 'Escape' && (S.stage === 'calm' || S.stage === 'night')) { S.paused = !S.paused; updateBar(); return; }
   if (e.key === 'Enter' && tag !== 'BUTTON' && S.stage === 'lighting') { nextStage(); return; }
   if ((e.key === 'n' || e.key === 'N') && !inInput && S.stage !== 'night') { S.paused = false; nextStage(); return; }
   if ((e.key === 'f' || e.key === 'F') && !headsetLive()) { IN.simFrost = !IN.simFrost; return; }
