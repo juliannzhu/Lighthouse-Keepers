@@ -61,13 +61,22 @@
   .legend i { width: 18px; height: 3px; display: inline-block; vertical-align: middle; margin-right: 6px; }
   .go { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
 
-  /* Dawn summary: child-facing pixel panel */
+  /* Dawn summary + decorations shop: child-facing pixel panel */
   .dawn { position: absolute; top: var(--space-4); right: var(--space-4); width: min(460px, 50%);
     max-height: calc(100% - 32px); overflow: auto; font-family: var(--font-pixel); }
   .dawn h1 { margin: 0 0 var(--space-1); }
   .dawn .big { font-size: 22px; line-height: 28px; margin: 0 0 var(--space-1); }
   .dawn .up { color: var(--success); font-size: 18px; line-height: 24px; display: flex; gap: var(--space-2); margin: 0 0 var(--space-2); }
   .dawn .same { font-size: 18px; line-height: 24px; margin: 0 0 var(--space-2); }
+  .stars { display: flex; gap: var(--space-2); align-items: center; font-size: 20px; line-height: 26px; margin-bottom: var(--space-2); }
+  .shop { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin-top: var(--space-2); }
+  .item { text-align: center; padding: var(--space-1); margin: var(--space-1); cursor: pointer; font: inherit; color: var(--ink); border: 0; }
+  .item canvas { margin: 0 auto; display: block; }
+  .item div { font-size: 16px; line-height: 22px; }
+  .item small { font-size: 16px; line-height: 22px; color: var(--ink-muted); display: block; }
+  .item.picked { box-shadow: 0 -4px 0 0 var(--accent), 0 4px 0 0 var(--accent), -4px 0 0 0 var(--accent), 4px 0 0 0 var(--accent); }
+  .item.cant { cursor: default; opacity: .6; }
+  .item:focus-visible { outline: var(--space-1) solid var(--ink); outline-offset: var(--space-2); }
   .btns { margin-top: var(--space-2); }
 
   .pause { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; font-family: var(--font-pixel); }
@@ -132,6 +141,8 @@ const CFG = {
   litMin: 0.22,                          // light a boat needs to move (same as the kit's "in light")
   dockStaySec: 4,
 };
+const SHOP = [['flag', 'Flag', 3], ['pot', 'Flowers', 4], ['bunting', 'Bunting', 5], ['lantern', 'Lantern', 6], ['crab', 'Crab friend', 4], ['gull', 'Gull', 2]];
+const DECO_AT = { flag: [0, -50], bunting: [-8, -37], pot: [-15, -7], lantern: [7, -6], crab: [14, -4], gull: [20, -42] };
 
 const $ = id => document.getElementById(id);
 const W = 240, H = 135, HZ = Math.round(H * 0.36);
@@ -215,7 +226,7 @@ function newNight() {
     beam: { level: 0, aim: DEFAULT_AIM, aboveSince: null, steady: false, count: 0, flareUntil: 0, flare: 0, lowSince: 0, eff: 0 },
     dens: 0.72, hist: [], histT: 0, tideStats: null, pending: { threshold: CFG.threshold, holdSec: CFG.holdSec },
     guide: { text: '', until: 0 }, nextSpawn: 0,
-    channelOnce: false, summaryShown: false, snap: null, transT0: 0,
+    channelOnce: false, summaryShown: false, dawnPick: null, snap: null, transT0: 0,
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
   makeNightRocks();
@@ -621,6 +632,8 @@ function renderSprites() {
   LK.island(ctx, p, BX, BY);
   const lampLit = S.stage === 'lighting' ? 0.6 * (S.reading ? S.reading.q : 0) : S.beam.eff;
   LK.lighthouse(ctx, p, BX, BY, CFG.lighthouse, lampLit, frosty());
+  // decorations the Keeper chose on past nights
+  store.get('owned', []).forEach(k => { const at = DECO_AT[k]; if (at) LK.drawSprite(ctx, LK.SPRITES[k], BX + at[0], BY + at[1], p); });
 
   // rocks stay on the chart once a steady beam has found them
   for (const r of S.rocks) {
@@ -752,7 +765,7 @@ function updateBar() {
     tide: 'Steer the marked boat to the dock beside the lighthouse. Boats move only in the light and wait in the dark.',
     rest: 'Rest: change the settings if you like, then start the next tide.',
     storm: 'The storm ship: a steady beam shows the buoys. Steer the big ship between them to the dock. Rocks block the way outside the channel.',
-    dawn: 'Dawn: the last boats are towed home. Read the team result together.',
+    dawn: 'Dawn: the last boats are towed home. Let the Keeper choose a decoration for the lighthouse.',
     end: 'The night is over. Start a new night whenever you are ready.',
   };
   $('help').textContent = HELP[st];
@@ -857,12 +870,13 @@ function drawGraph() {
   g.stroke();
 }
 
-// ---------- Dawn: team summary ----------
+// ---------- Dawn: team summary + decorations ----------
 function showDawn() {
   if (S.summaryShown) return;
   S.summaryShown = true;
-  const n = S.passengers, last = store.get('lastNight', null);
+  const n = S.passengers, last = store.get('lastNight', null), earned = Math.floor(n / 2);
   store.set('lastNight', n);
+  store.set('stars', store.get('stars', 0) + earned);
   const cmp = last == null ? `<p class="same">Your first night at the harbour.</p>` :
     n > last ? `<p class="up"><span aria-hidden="true">▲</span> ${n - last} more than last night</p>` :
     n === last ? `<p class="same">Just like last night.</p>` : `<p class="same">Every boat came home safely.</p>`;
@@ -871,11 +885,40 @@ function showDawn() {
     <h1 class="game-title">Dawn!</h1>
     <p class="big">Together you brought ${n} passenger${n === 1 ? '' : 's'} home.</p>
     ${cmp}
-    <div class="btns"><button class="lk-btn" id="goodnight">Goodnight</button></div>`;
+    <div class="stars"><span id="starIcon"></span><span id="starText"></span></div>
+    <div class="small">Pick a decoration for the lighthouse, then press Decorate.</div>
+    <div class="shop" id="shop"></div>
+    <div class="btns"><button class="lk-btn" id="decorate">Decorate</button><button class="lk-btn secondary" id="goodnight">Goodnight</button></div>`;
   d.classList.remove('hidden');
+  $('starIcon').appendChild(LK.spriteCanvas(7, 5, 4, (c, p) => LK.drawSprite(c, LK.SPRITES.star, 0, 0, p)));
+  $('decorate').onclick = () => {
+    const pick = SHOP.find(s => s[0] === S.dawnPick), stars = store.get('stars', 0), owned = store.get('owned', []);
+    if (!pick || owned.includes(pick[0]) || stars < pick[2]) return;
+    store.set('stars', stars - pick[2]); store.set('owned', [...owned, pick[0]]); S.dawnPick = null;
+    say(`The ${pick[1].toLowerCase()} looks lovely on the lighthouse.`, 5);
+    renderShop();
+  };
   $('goodnight').onclick = () => { d.classList.add('hidden'); setStage('end'); };
+  renderShop();
   updateBar();
-  $('goodnight').focus({ preventScroll: true });
+  $('decorate').focus({ preventScroll: true });
+}
+function renderShop() {
+  const stars = store.get('stars', 0), owned = store.get('owned', []);
+  setText($('starText'), `${stars} sea star${stars === 1 ? '' : 's'} to spend`);
+  const shop = $('shop'); shop.innerHTML = '';
+  SHOP.forEach(([key, name, cost]) => {
+    const have = owned.includes(key), can = !have && stars >= cost;
+    const el = document.createElement('button');
+    el.className = 'item lk-panel' + (S.dawnPick === key ? ' picked' : '') + (can || have ? '' : ' cant');
+    const spr = LK.SPRITES[key], sz = LK.spriteSize(spr);
+    el.appendChild(LK.spriteCanvas(18, 10, 3, (c, p) => LK.drawSprite(c, spr, Math.floor((18 - sz.w) / 2), Math.floor((10 - sz.h) / 2), p)));
+    const nm = document.createElement('div'); nm.textContent = name;
+    const sm = document.createElement('small'); sm.textContent = have ? 'On the lighthouse' : `${cost} stars`;
+    el.append(nm, sm);
+    el.onclick = () => { if (can) { S.dawnPick = key; renderShop(); } };
+    shop.appendChild(el);
+  });
 }
 
 // ---------- keys ----------
