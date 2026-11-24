@@ -324,6 +324,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self.stream()
         if self.path.rstrip("/") == "/harbour":
             self.path = "/harbour.html"
+        if self.path.rstrip("/") == "/game":
+            self.path = "/game.html"
         return super().do_GET()
 
     def stream(self):
@@ -374,6 +376,7 @@ def main():
     server = ThreadingHTTPServer(("127.0.0.1", args.port), partial(Handler, directory=str(HERE)))
     print(f"[bridge] Open http://localhost:{args.port} in your browser   (Ctrl+C to quit)")
     print(f"[bridge] Lighthouse harbour: http://localhost:{args.port}/harbour")
+    print(f"[bridge] Lighthouse Keepers game: http://localhost:{args.port}/game")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
