@@ -185,12 +185,13 @@ const K = {};
 function newNight() {
   S = {
     stage: 'lighting', tide: 0, T: 0, stageT: 0, paused: false, theme: null,
-    boats: [], sel: null, passengers: 0, boatsHome: 0,
+    boats: [], sel: null, rocks: [], passengers: 0, boatsHome: 0,
     beam: { level: 0, aim: DEFAULT_AIM, aboveSince: null, steady: false, count: 0, flareUntil: 0, flare: 0, lowSince: 0, eff: 0 },
     dens: 0.72,
     guide: { text: '', until: 0 }, nextSpawn: 0,
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
+  makeNightRocks();
   setStage('lighting');
 }
 
@@ -213,18 +214,28 @@ function applyTheme(theme) {
   drawIcons();
 }
 
-// ---------- boat spawning ----------
+// ---------- rocks and boats ----------
 const distTo = (a, b, x, y) => Math.hypot(a - x, b - y);
+function makeNightRocks() {
+  for (let tries = 0; S.rocks.length < 7 && tries < 400; tries++) {
+    const x = Math.round(rand(85, 215)), y = Math.round(rand(HZ + 12, 126));
+    if (S.rocks.some(r => distTo(r.x, r.y, x, y) < 20) || distTo(DOCK.x, DOCK.y, x, y) < 26) continue;
+    S.rocks.push({ x, y, revealed: false, splashUntil: 0 });
+  }
+}
+// rock (x,y) is its 8×4 sprite's centre
+function rockHits(r, cx, cy, hw, hh) { return Math.abs(cx - r.x) < 4 + hw - 2 && Math.abs(cy + hh * 0.3 - r.y) < 5; }
 
 function makeBoat(type, x, y) {
   const sz = LK.spriteSize(LK.SPRITES[type]);
   return { type, x, y, w: sz.w, h: sz.h, passengers: CFG.passengers[type], state: 'sea', left: true,
-    trail: [], status: 'ready', dockT: 0, slotX: 0, slotY: 0 };
+    trail: [], pauseUntil: 0, status: 'ready', dockT: 0, slotX: 0, slotY: 0 };
 }
 function spawnBoat() {
   for (let tries = 0; tries < 60; tries++) {
     const x = Math.round(rand(140, 222)), y = Math.round(rand(HZ + 12, 124));
     if (S.boats.some(b => b.state === 'sea' && distTo(b.x, b.y, x, y) < 18)) continue;
+    if (S.rocks.some(r => distTo(r.x, r.y, x, y) < 14)) continue;
     const type = x > 195 ? (Math.random() < 0.5 ? 'fish' : 'sail') : x > 165 ? (Math.random() < 0.5 ? 'sail' : 'row') : 'row';
     const b = makeBoat(type, x, y);
     S.boats.push(b);
@@ -307,7 +318,7 @@ function updateBeam(r, dt) {
     if (!B.steady && T - B.aboveSince >= CFG.holdSec) {
       B.steady = true;
       if (!flaring && ++B.count >= CFG.steadyForFlare) { B.flareUntil = T + CFG.flareSec; say('A flare! The whole bay is lit.', 5); }
-      else if (!flaring) say('A steady beam! See the sparkles?', 4);
+      else if (!flaring) say(S.stage === 'calm' ? 'A steady beam! See the sparkles?' : 'Steady beam! Hidden rocks are showing.', 4);
     }
   }
   if (!flaring && B.count >= CFG.steadyForFlare && T >= B.flareUntil) B.count = 0;
@@ -351,12 +362,22 @@ function tryMove(b, mx, my) {
   const hw = b.w / 2, hh = b.h / 2;
   const nx = clamp(b.x + mx, hw + 1, W - hw - 1), ny = clamp(b.y + my, HZ + 4 + hh, H - hh - 1);
   if (onLand(nx, ny, b.w)) return;
+  for (const r of S.rocks) {
+    if (!rockHits(r, nx, ny, hw, hh) || rockHits(r, b.x, b.y, hw, hh)) continue;
+    if (r.revealed) return;                       // charted rock: the boat simply can't go there
+    // hidden rock: a gentle bump back and a short pause, never damage
+    const bx = clamp(b.x - Math.sign(mx) * 3, hw + 1, W - hw - 1), by = clamp(b.y - Math.sign(my) * 3, HZ + 4 + hh, H - hh - 1);
+    if (!onLand(bx, by, b.w)) { b.x = bx; b.y = by; }
+    b.pauseUntil = S.T + 1.2; r.splashUntil = S.T + 1.2; b.status = 'bumped';
+    return;
+  }
   b.x = nx; b.y = ny;
 }
 function steer(dt) {
   const b = selected();
   if (!b) return;
   const dx = (K.ArrowRight ? 1 : 0) - (K.ArrowLeft ? 1 : 0), dy = (K.ArrowDown ? 1 : 0) - (K.ArrowUp ? 1 : 0);
+  if (S.T < b.pauseUntil) { b.status = 'bumped'; return; }
   if (!boatLit(b)) { b.status = 'dark'; return; }
   if (!dx && !dy) { b.status = 'ready'; return; }
   b.status = 'moving';
@@ -388,6 +409,10 @@ function updateBoats(dt) {
   }
   S.boats = S.boats.filter(b => b.state !== 'gone');
 }
+function revealThings() {
+  const showAll = S.beam.flare > 0.5, steady = S.beam.steady;
+  for (const r of S.rocks) if (!r.revealed && (showAll || (steady && lit(r.x, r.y) > 0.25))) r.revealed = true;
+}
 
 // ---------- main update ----------
 function update(dt) {
@@ -398,6 +423,7 @@ function update(dt) {
   S.reading = r;
   updateBeam(r, dt);
   lit = makeLit();
+  if (S.stage === 'tide') revealThings();   // rocks are a tide discovery, not part of the warm-up
 
   if (S.stage === 'tide') {
     if (S.T >= S.nextSpawn && S.stageT < CFG.durations.tide - CFG.noSpawnLastSec) {
@@ -492,6 +518,16 @@ function renderSprites() {
   const lampLit = S.stage === 'lighting' ? 0.6 * (S.reading ? S.reading.q : 0) : S.beam.eff;
   LK.lighthouse(ctx, p, BX, BY, CFG.lighthouse, lampLit, frosty());
 
+  // rocks stay on the chart once a steady beam has found them
+  for (const r of S.rocks) {
+    const x0 = r.x - 4, y0 = r.y - 2;
+    if (r.revealed) {
+      for (let f = -2; f < 10; f++) if ((f & 1) === 0) px(p.crest, x0 + f, y0 + 4);
+      LK.drawSprite(ctx, LK.SPRITES.rock, x0, y0, p);
+    } else if (T < r.splashUntil) {
+      for (let f = -1; f < 9; f += 2) px(p.crest, x0 + f, y0 + 2 + ((f + Math.floor(T * 4)) & 1));
+    }
+  }
   // dock marker (the Pilot's goal)
   if (S.stage === 'tide') { px(p.route, DOCK.x + 2, DOCK.y - 1, 3, 3); px(p.outline, DOCK.x + 3, DOCK.y, 1, 1); }
 
@@ -617,6 +653,7 @@ function updateBarLive() {
   const b = selected();
   if (bs) setText(bs, !b || !(st === 'tide') ? (st === 'tide' && !b ? 'Waiting for the next boat…' : '') :
     b.status === 'dark' ? 'Marked boat: waiting for light' :
+    b.status === 'bumped' ? 'Bump! A hidden rock. A steady beam shows the rocks.' :
     b.status === 'moving' ? 'Marked boat: sailing' : 'Marked boat: ready');
 }
 
