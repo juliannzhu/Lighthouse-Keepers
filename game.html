@@ -109,16 +109,17 @@
 'use strict';
 // ---------- Config (open design decisions stay as values) ----------
 const CFG = {
-  // Palette per stage.
-  stagePalettes: { lighting: 'harbour-night', calm: 'sea-glass', tide: 'sea-glass', rest: 'sea-glass', end: 'harbour-night' },
+  // Palette per stage. The Storm Ship climax uses Deep Fjord.
+  stagePalettes: { lighting: 'harbour-night', calm: 'sea-glass', tide: 'sea-glass', rest: 'sea-glass',
+                   storm: 'deep-fjord', end: 'harbour-night' },
   lighthouse: 'classic', fog: 'bands',   // fog: bands | dither | clouds
   threshold: 45, holdSec: 3,             // attention 0–100; seconds above threshold for a steady beam
   easeSec: 1, frostAbove: 50, steadyForFlare: 3, flareSec: 10,
   tides: 3,
-  durations: { calm: 60, tide: 180 },
-  boatSpeed: 14,                         // art pixels per second
+  durations: { calm: 60, tide: 180, stormMax: 240 },
+  boatSpeed: 14, stormSpeed: 9,          // art pixels per second
   maxBoats: 4, spawnEvery: [20, 32], noSpawnLastSec: 25,
-  passengers: { row: 2, sail: 4, fish: 6 },
+  passengers: { row: 2, sail: 4, fish: 6, storm: 20 },
   litMin: 0.22,                          // light a boat needs to move (same as the kit's "in light")
   dockStaySec: 4,
 };
@@ -195,11 +196,11 @@ const K = {};
 function newNight() {
   S = {
     stage: 'lighting', tide: 0, T: 0, stageT: 0, paused: false, theme: null,
-    boats: [], sel: null, rocks: [], passengers: 0, boatsHome: 0,
+    boats: [], sel: null, rocks: [], buoys: [], channel: null, passengers: 0, boatsHome: 0,
     beam: { level: 0, aim: DEFAULT_AIM, aboveSince: null, steady: false, count: 0, flareUntil: 0, flare: 0, lowSince: 0, eff: 0 },
     dens: 0.72, hist: [], histT: 0, tideStats: null, pending: { threshold: CFG.threshold, holdSec: CFG.holdSec },
     guide: { text: '', until: 0 }, nextSpawn: 0,
-    snap: null, transT0: 0,
+    channelOnce: false, snap: null, transT0: 0,
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
   makeNightRocks();
@@ -226,7 +227,7 @@ function applyTheme(theme) {
   drawIcons();
 }
 
-// ---------- rocks and boats ----------
+// ---------- rocks, boats, channel ----------
 const distTo = (a, b, x, y) => Math.hypot(a - x, b - y);
 function makeNightRocks() {
   for (let tries = 0; S.rocks.length < 7 && tries < 400; tries++) {
@@ -266,7 +267,7 @@ function selectNext(dir = 1) {
 function autoSelect() {
   if (selected()) return;
   const list = seaBoats();
-  S.sel = list[0] || null;
+  S.sel = list.find(b => b.type === 'storm') || list[0] || null;
 }
 
 function onLand(x, y, hw) {
@@ -277,11 +278,45 @@ function onLand(x, y, hw) {
   return false;
 }
 function inDock(b) {
-  return b.x > DOCK.x - 24 && b.x < DOCK.x + 8 && b.y > DOCK.y - 6 && b.y < DOCK.y + 12;
+  const big = b.type === 'storm';
+  return b.x > DOCK.x - (big ? 30 : 24) && b.x < DOCK.x + (big ? 20 : 8) && b.y > DOCK.y - (big ? 8 : 6) && b.y < DOCK.y + (big ? 16 : 12);
+}
+
+function distToSeg(px, py, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], t = clamp(((px - a[0]) * dx + (py - a[1]) * dy) / (dx * dx + dy * dy), 0, 1);
+  return Math.hypot(px - a[0] - dx * t, py - a[1] - dy * t);
+}
+const distToPath = (pts, x, y) => Math.min(...pts.slice(1).map((p, i) => distToSeg(x, y, pts[i], p)));
+
+function startStorm() {
+  const ship = makeBoat('storm', 204, 66);
+  S.boats.push(ship); S.sel = ship;
+  const pts = [[196, 70], [170, 86], [140, 96], [112, 92], [90, 102], [DOCK.x + 2, DOCK.y + 8]];
+  S.channel = pts;
+  // buoy pairs either side of the channel, every ~16 px
+  S.buoys = [];
+  for (let s = 0; s < pts.length - 1; s++) {
+    const [ax, ay] = pts[s], [bx, by] = pts[s + 1], len = Math.hypot(bx - ax, by - ay), nx = -(by - ay) / len, ny = (bx - ax) / len;
+    for (let u = s === 0 ? 8 : 0; u < len; u += 16) {
+      const x = ax + (bx - ax) * u / len, y = ay + (by - ay) * u / len;
+      [-9, 9].forEach(o => {
+        const X = Math.round(x + nx * o), Y = Math.round(y + ny * o);
+        if (!onLand(X, Y, 0)) S.buoys.push({ x: X, y: Y, revealed: false });
+      });
+    }
+  }
+  // the storm pushes rocks off the channel and scatters more around it
+  S.rocks = S.rocks.filter(r => distToPath(pts, r.x, r.y) > 13);
+  for (let tries = 0, added = 0; added < 14 && tries < 600; tries++) {
+    const x = Math.round(rand(88, 228)), y = Math.round(rand(HZ + 8, 128));
+    if (distToPath(pts, x, y) < 14 || distTo(204, 66, x, y) < 22 || distTo(DOCK.x, DOCK.y, x, y) < 22) continue;
+    if (S.rocks.some(r => distTo(r.x, r.y, x, y) < 12)) continue;
+    S.rocks.push({ x, y, revealed: false, splashUntil: 0 }); added++;
+  }
 }
 
 // ---------- stages ----------
-const STAGE_NAME = { lighting: 'Lamp lighting', calm: 'Calm waters', rest: 'Rest', end: 'Dawn' };
+const STAGE_NAME = { lighting: 'Lamp lighting', calm: 'Calm waters', rest: 'Rest', storm: 'Storm ship', end: 'Dawn' };
 function say(text, secs) { S.guide.text = text; S.guide.until = S.T + (secs || 5); }
 
 function setStage(stage) {
@@ -302,6 +337,7 @@ function setStage(stage) {
     say(S.tide === 1 ? 'Boats are coming! Keep the light steady to guide them home.' : `Tide ${S.tide}. More boats are on their way.`, 7);
   }
   if (stage === 'rest') say('Rest time. Stretch your arms and take a slow breath.', 1e9);
+  if (stage === 'storm') { startStorm(); say('A big ship is in the storm. Hold the light steady to find its channel.', 8); }
   if (stage === 'end') say('Goodnight, keepers. See you tomorrow night.', 1e9);
   updateBar();
 }
@@ -310,8 +346,9 @@ function nextStage() {
   switch (S.stage) {
     case 'lighting': return setStage('calm');
     case 'calm': return setStage('tide');
-    case 'tide': return setStage(S.tide < CFG.tides ? 'rest' : 'end');
+    case 'tide': return setStage(S.tide < CFG.tides ? 'rest' : 'storm');
     case 'rest': return setStage('tide');
+    case 'storm': return setStage('end');
     case 'end': return newNight();
   }
 }
@@ -325,7 +362,7 @@ function beamTarget(r) {
 function updateBeam(r, dt) {
   const B = S.beam, T = S.T;
   B.level += (beamTarget(r) - B.level) * ease(dt, CFG.easeSec / 3);
-  const counting = S.stage === 'calm' || S.stage === 'tide';
+  const counting = S.stage === 'calm' || S.stage === 'tide' || S.stage === 'storm';
   const flaring = T < B.flareUntil;
   const above = r.att != null && r.att >= CFG.threshold;
   if (!above || !counting) { B.aboveSince = null; B.steady = false; }
@@ -350,7 +387,7 @@ function updateBeam(r, dt) {
 
   // the beam turns slowly toward the boat the Pilot has marked
   const b = selected();
-  const target = b && (S.stage === 'tide') ? clamp(Math.atan2(b.y - LAMP.y, b.x - LAMP.x), -0.15, 1.3) : DEFAULT_AIM;
+  const target = b && (S.stage === 'tide' || S.stage === 'storm') ? clamp(Math.atan2(b.y - LAMP.y, b.x - LAMP.x), -0.15, 1.3) : DEFAULT_AIM;
   B.aim += (target - B.aim) * ease(dt, 0.6);
 }
 function makeLit() {
@@ -398,7 +435,7 @@ function steer(dt) {
   if (!boatLit(b)) { b.status = 'dark'; return; }
   if (!dx && !dy) { b.status = 'ready'; return; }
   b.status = 'moving';
-  const sp = CFG.boatSpeed * dt / (dx && dy ? Math.SQRT2 : 1);
+  const sp = (b.type === 'storm' ? CFG.stormSpeed : CFG.boatSpeed) * dt / (dx && dy ? Math.SQRT2 : 1);
   if (dx) b.left = dx < 0;
   tryMove(b, dx * sp, 0); tryMove(b, 0, dy * sp);
   const t = b.trail[b.trail.length - 1];
@@ -408,20 +445,20 @@ function steer(dt) {
 function dockBoat(b, quiet) {
   const used = S.boats.filter(o => o !== b && o.state === 'docked').length;
   b.state = 'docked'; b.dockT = S.T; b.trail = [];
-  b.slotX = DOCK.x - 16 + (used % 3) * 12;
-  b.slotY = DOCK.y + 4;
+  b.slotX = b.type === 'storm' ? DOCK.x + 4 : DOCK.x - 16 + (used % 3) * 12;
+  b.slotY = b.type === 'storm' ? DOCK.y + 8 : DOCK.y + 4;
   b.left = false;
   S.passengers += b.passengers; S.boatsHome++;
   if (S.tideStats) S.tideStats.boats++;
-  if (!quiet) say('A boat is home!', 4);
+  if (!quiet) say(b.type === 'storm' ? 'The storm ship is home! Every passenger is safe.' : 'A boat is home!', 4);
   autoSelect();
 }
 function updateBoats(dt) {
-  if (S.stage === 'tide') steer(dt);
+  if (S.stage === 'tide' || S.stage === 'storm') steer(dt);
   for (const b of S.boats) {
     if (b.state === 'docked') {
       b.x += (b.slotX - b.x) * ease(dt, 0.4); b.y += (b.slotY - b.y) * ease(dt, 0.4);
-      const stays = S.stage === 'end';
+      const stays = S.stage === 'end' || b.type === 'storm';
       if (!stays && S.T - b.dockT > CFG.dockStaySec) b.state = 'gone';
     }
   }
@@ -430,6 +467,10 @@ function updateBoats(dt) {
 function revealThings() {
   const showAll = S.beam.flare > 0.5, steady = S.beam.steady;
   for (const r of S.rocks) if (!r.revealed && (showAll || (steady && lit(r.x, r.y) > 0.25))) r.revealed = true;
+  for (const u of S.buoys) if (!u.revealed && (showAll || (steady && lit(u.x, u.y) > 0.25))) {
+    u.revealed = true;
+    if (!S.channelOnce) { S.channelOnce = true; say('You found the channel! Keep the light steady.', 5); }
+  }
 }
 
 // ---------- main update ----------
@@ -441,7 +482,7 @@ function update(dt) {
   S.reading = r;
   updateBeam(r, dt);
   lit = makeLit();
-  if (S.stage === 'tide') revealThings();   // rocks are a tide discovery, not part of the warm-up
+  if (S.stage === 'tide' || S.stage === 'storm') revealThings();   // rocks are a tide discovery, not part of the warm-up
 
   if (S.stage === 'tide') {
     S.histT += dt;
@@ -453,6 +494,10 @@ function update(dt) {
     if (S.stageT >= CFG.durations.tide) nextStage();
   }
   if (S.stage === 'calm' && S.stageT >= CFG.durations.calm) nextStage();
+  if (S.stage === 'storm') {
+    const ship = S.boats.find(b => b.type === 'storm');
+    if ((ship && ship.state === 'docked' && S.T - ship.dockT > 4) || S.stageT >= CFG.durations.stormMax) nextStage();
+  }
   updateBoats(dt);
 }
 
@@ -466,8 +511,8 @@ let img = null;
 
 function look() {
   const st = S.stage, phase = st === 'rest' ? 'tide' : st === 'end' ? 'dawn' : st;
-  return { phase, dawn: phase === 'dawn',
-    dens: 0.72 * ({ lighting: 1, calm: 0.55, tide: 1, dawn: 0.22 }[phase] || 1),
+  return { phase, dawn: phase === 'dawn', storm: phase === 'storm',
+    dens: 0.72 * ({ lighting: 1, calm: 0.55, tide: 1, storm: 1.3, dawn: 0.22 }[phase] || 1),
     starTh: phase === 'calm' || phase === 'dawn' ? 0.982 : 0.99 };
 }
 
@@ -477,8 +522,9 @@ function renderBackground(now) {
   const dens = S.dens;
   let skyTop = C['sky-deep'], skyBot = C.sky;
   if (L0.dawn) { skyTop = mixRGB(C.sky, C['sky-deep'], 0.4); skyBot = mixRGB(C.sky, C.lamp, 0.5); }
+  if (L0.storm) { skyTop = mixRGB(C['sky-deep'], C.outline, 0.5); skyBot = C['sky-deep']; }
   const seaTop = L0.dawn ? mixRGB(C.sea, C.lamp, 0.18) : C.sea, sunX = W * 0.72, sunR = 10;
-  const crestOff = Math.floor(now * 1.2) % 490;
+  const crestOff = Math.floor(now * 1.2) % 490, rainOff = Math.floor(now * 9) % 880;
 
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x; Larr[i] = lit(x, y); Garr[i] = lit.gl || 0;
@@ -489,7 +535,7 @@ function renderBackground(now) {
     if (y < HZ) {
       const t = y / HZ; set(t > b ? skyBot : skyTop);
       if (L0.dawn && t * 2 - 1 > b) { set(skyBot); mixT(C.beam, 0.25); }
-      if (N.star[i] > L0.starTh && y < HZ - 5) set(C.star);
+      if (!L0.storm && N.star[i] > L0.starTh && y < HZ - 5) set(C.star);
       if (L0.dawn) { const sd = Math.hypot(x - sunX, (y - HZ) * 1.1); if (sd < sunR) set(sd < sunR - 2 ? C.beam : C['beam-core']); }
     } else {
       const row = y - HZ, ts = row / (H - HZ);
@@ -525,6 +571,11 @@ function renderBackground(now) {
         if (steady && L > 0.82 && b < 0.2) set(C['beam-core']);
       }
     }
+    // storm rain, drifting slowly
+    if (L0.storm) {
+      const yy = y - rainOff + 990;
+      if (((x + yy * 2) % 11) === 0 && hash(Math.floor((x + yy * 2) / 11), Math.floor(yy / 5), 13) > 0.55) mixT(C.crest, 0.6);
+    }
     const k = i * 4; d[k] = cr; d[k + 1] = cg; d[k + 2] = cb; d[k + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
@@ -548,8 +599,14 @@ function renderSprites() {
       for (let f = -1; f < 9; f += 2) px(p.crest, x0 + f, y0 + 2 + ((f + Math.floor(T * 4)) & 1));
     }
   }
+  // channel buoys (storm)
+  for (const u of S.buoys) if (u.revealed) {
+    px(p.outline, u.x - 1, u.y - 4, 3, 5); px(p.outline, u.x, u.y - 5);
+    px(p.lamp, u.x, u.y - 6); px(p.tower, u.x, u.y - 3); px(p.stripe, u.x, u.y - 2); px(p.tower, u.x, u.y - 1);
+    px(p.crest, u.x - 2, u.y + 1); px(p.crest, u.x + 2, u.y + 1);
+  }
   // dock marker (the Pilot's goal)
-  if (S.stage === 'tide') { px(p.route, DOCK.x + 2, DOCK.y - 1, 3, 3); px(p.outline, DOCK.x + 3, DOCK.y, 1, 1); }
+  if (S.stage === 'tide' || S.stage === 'storm') { px(p.route, DOCK.x + 2, DOCK.y - 1, 3, 3); px(p.outline, DOCK.x + 3, DOCK.y, 1, 1); }
 
   const sel = selected();
   for (const b of S.boats) {
@@ -560,7 +617,7 @@ function renderSprites() {
     LK.drawSprite(ctx, spr, x0, y0, p, inLight ? { flip: b.left } : { dim: 0.6, dimTo: 'fog', flip: b.left });
     if (!inLight) { px(p.lamp, x0 + Math.floor(b.w / 2), y0 - 2); px(LK.mix(p.lamp, p.fog, 0.5), x0 + Math.floor(b.w / 2), y0 - 1); }
     for (let f = 0; f < b.w; f += 3) px(p.crest, x0 + f, y0 + b.h);
-    if (b === sel && (S.stage === 'tide')) {
+    if (b === sel && (S.stage === 'tide' || S.stage === 'storm')) {
       const mx = x0 + Math.floor(b.w / 2), my = y0 - 8;
       px(p.outline, mx - 3, my - 1, 7, 1); px(p.route, mx - 2, my, 5, 1); px(p.route, mx - 1, my + 1, 3, 1); px(p.route, mx, my + 2, 1, 1);
       px(p.outline, mx - 3, my, 1, 1); px(p.outline, mx + 3, my, 1, 1);
@@ -626,15 +683,15 @@ function guideText() {
   const st = S.stage;
   if (st === 'lighting') return { text: S.reading && S.reading.q >= 0.75 ? 'The lamp is ready. Sit tall and keep your eyes on the light.' : 'Sit tall. The lamp is warming up.' };
   if (st === 'calm') return { text: CALM_LINES[Math.floor(S.stageT / 12) % CALM_LINES.length] };
-  if ((st === 'tide') && S.T - S.beam.lowSince > 8) return { text: 'Sit tall and keep your eyes on the light.' };
+  if ((st === 'tide' || st === 'storm') && S.T - S.beam.lowSince > 8) return { text: 'Sit tall and keep your eyes on the light.' };
   return null;
 }
 
 function updateHUD() {
-  const st = S.stage, inPlay = st === 'calm' || st === 'tide';
+  const st = S.stage, inPlay = st === 'calm' || st === 'tide' || st === 'storm';
   setText($('stageName'), st === 'tide' ? `Tide ${S.tide}` : STAGE_NAME[st]);
   [...$('ticks').children].forEach((el, i) => {
-    const done = i < S.tide - (st === 'tide' ? 1 : 0) || st === 'end';
+    const done = i < S.tide - (st === 'tide' ? 1 : 0) || st === 'storm' || st === 'end';
     el.classList.toggle('on', done);
     el.firstChild.style.width = (!done && st === 'tide' && i === S.tide - 1) ? Math.min(100, S.stageT / CFG.durations.tide * 100).toFixed(1) + '%' : '0';
   });
@@ -661,21 +718,22 @@ function updateBar() {
     calm: 'Calm waters: no boats yet. Let the Keeper see the beam respond. Try saying "Look how far the beam reaches."',
     tide: 'Steer the marked boat to the dock beside the lighthouse. Boats move only in the light and wait in the dark.',
     rest: 'Rest: change the settings if you like, then start the next tide.',
+    storm: 'The storm ship: a steady beam shows the buoys. Steer the big ship between them to the dock. Rocks block the way outside the channel.',
     end: 'The night is over. Start a new night whenever you are ready.',
   };
   $('help').textContent = HELP[st];
   const keys = [];
   if (st === 'lighting') keys.push(`${kb('Enter')} start the night`);
   if (st === 'rest') keys.push(`${kb('Enter')} start tide ${S.tide + 1}`);
-  if (st === 'tide') keys.push(`${kb('←')} ${kb('↑')} ${kb('→')} ${kb('↓')} steer`, `${kb('Tab')} next boat`);
-  if (st === 'calm' || st === 'tide') keys.push(`${kb('Esc')} pause`);
+  if (st === 'tide' || st === 'storm') keys.push(`${kb('←')} ${kb('↑')} ${kb('→')} ${kb('↓')} steer`, `${kb('Tab')} next boat`);
+  if (st === 'calm' || st === 'tide' || st === 'storm') keys.push(`${kb('Esc')} pause`);
   if (st !== 'end') keys.push(`${kb('N')} skip to the next stage`);
   if (!headsetLive()) keys.push(`${kb('Space')} hold for simulated attention`, `${kb('F')} test frosty lamp`);
   keys.push('<span id="timeLeft"></span>', '<span id="boatStatus"></span>');
   setHTML($('keys'), keys.map(k => `<span>${k}</span>`).join(''));
   const main = $('mainBtn'), pause = $('pauseBtn');
   main.textContent = { lighting: 'Start the night', rest: `Start tide ${S.tide + 1}`, end: 'Start a new night' }[st] || 'Skip stage';
-  pause.classList.toggle('hidden', !(st === 'calm' || st === 'tide'));
+  pause.classList.toggle('hidden', !(st === 'calm' || st === 'tide' || st === 'storm'));
   pause.textContent = S.paused ? 'Carry on' : 'Pause';
 }
 let lastLive = null;
@@ -687,7 +745,7 @@ function updateBarLive() {
   if (tl) setText(tl, st === 'calm' ? `Tide 1 starts in ${mmss(CFG.durations.calm - S.stageT)}` :
     st === 'tide' ? `Tide ${S.tide}: ${mmss(Math.max(0, CFG.durations.tide - S.stageT))} left` : '');
   const b = selected();
-  if (bs) setText(bs, !b || !(st === 'tide') ? (st === 'tide' && !b ? 'Waiting for the next boat…' : '') :
+  if (bs) setText(bs, !b || !(st === 'tide' || st === 'storm') ? (st === 'tide' && !b ? 'Waiting for the next boat…' : '') :
     b.status === 'dark' ? 'Marked boat: waiting for light' :
     b.status === 'bumped' ? 'Bump! A hidden rock. A steady beam shows the rocks.' :
     b.status === 'moving' ? 'Marked boat: sailing' : 'Marked boat: ready');
@@ -770,8 +828,8 @@ addEventListener('keydown', e => {
   const tag = e.target.tagName, inInput = tag === 'INPUT';
   if (ARROWS.includes(e.key)) { if (inInput) return; K[e.key] = true; e.preventDefault(); return; }
   if (e.key === ' ') { if (inInput) return; IN.space = true; e.preventDefault(); return; }
-  if (e.key === 'Tab' && (S.stage === 'tide')) { selectNext(e.shiftKey ? -1 : 1); e.preventDefault(); return; }
-  if (e.key === 'Escape' && (S.stage === 'calm' || S.stage === 'tide')) { S.paused = !S.paused; updateBar(); return; }
+  if (e.key === 'Tab' && (S.stage === 'tide' || S.stage === 'storm')) { selectNext(e.shiftKey ? -1 : 1); e.preventDefault(); return; }
+  if (e.key === 'Escape' && (S.stage === 'calm' || S.stage === 'tide' || S.stage === 'storm')) { S.paused = !S.paused; updateBar(); return; }
   if (e.key === 'Enter' && tag !== 'BUTTON' && (S.stage === 'lighting' || S.stage === 'rest')) { nextStage(); return; }
   if ((e.key === 'n' || e.key === 'N') && !inInput && S.stage !== 'end') { S.paused = false; nextStage(); return; }
   if ((e.key === 'f' || e.key === 'F') && !headsetLive()) { IN.simFrost = !IN.simFrost; return; }
