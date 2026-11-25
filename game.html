@@ -144,6 +144,8 @@ const CFG = {
   passengers: { row: 2, sail: 4, fish: 6, storm: 20 },
   litMin: 0.22,                          // light a boat needs to move (same as the kit's "in light")
   dockStaySec: 4,
+  fadeSec: 1.5, dawnFadeSec: 6,           // palette dissolve between stages; the storm-to-dawn one is slow
+  sunriseSec: 3.5, dawnSummaryAfter: 10, // sunrise easing (about 3x this to finish) and when the summary appears
 };
 const SHOP = [['flag', 'Flag', 3], ['pot', 'Flowers', 4], ['bunting', 'Bunting', 5], ['lantern', 'Lantern', 6], ['crab', 'Crab friend', 4], ['gull', 'Gull', 2]];
 const DECO_AT = { flag: [0, -50], bunting: [-8, -37], pot: [-15, -7], lantern: [7, -6], crab: [14, -4], gull: [20, -42] };
@@ -227,10 +229,10 @@ function newNight() {
   S = {
     stage: 'lighting', tide: 0, T: 0, stageT: 0, paused: false, theme: null,
     boats: [], sel: null, rocks: [], buoys: [], channel: null, passengers: 0, boatsHome: 0,
-    beam: { level: 0, aim: DEFAULT_AIM, aboveSince: null, steady: false, count: 0, flareUntil: 0, flare: 0, lowSince: 0, eff: 0 },
+    beam: { level: 0, aim: DEFAULT_AIM, aboveSince: null, steady: false, count: 0, flareUntil: 0, flare: 0, lowSince: 0, eff: 0, dawnMix: 0 },
     dens: 0.72, hist: [], histT: 0, tideStats: null, pending: { threshold: CFG.threshold, holdSec: CFG.holdSec },
     highContrast: store.get('highContrast', false), guide: { text: '', until: 0 }, nextSpawn: 0,
-    channelOnce: false, summaryShown: false, dawnPick: null, snap: null, transT0: 0,
+    channelOnce: false, summaryShown: false, dawnPick: null, snap: null, transT0: 0, transDur: 1.5, sun: 0, stormAmt: 0, lastNow: null,
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
   makeNightRocks();
@@ -251,7 +253,7 @@ function palette(theme) {
 const themeFor = stage => S.highContrast ? CFG.highContrastTheme : CFG.stagePalettes[stage];
 function applyTheme(theme) {
   if (theme === S.theme) return;
-  if (S.theme && ctx) { S.snap = ctx.getImageData(0, 0, W, H); S.transT0 = performance.now(); }
+  if (S.theme && ctx) { S.snap = ctx.getImageData(0, 0, W, H); S.transT0 = performance.now(); S.transDur = S.stage === 'dawn' ? CFG.dawnFadeSec : CFG.fadeSec; }
   S.theme = theme;
   document.documentElement.setAttribute('data-theme', theme);
   ({ p: P, rgb: C } = palette(theme));
@@ -425,7 +427,8 @@ function updateBeam(r, dt) {
   // effective level the scene draws with
   let eff = B.level;
   if (S.stage === 'lighting') eff = 0.04 + 0.08 * r.q;
-  if (S.stage === 'dawn' || S.stage === 'end') eff = 0.25;
+  B.dawnMix += ((S.stage === 'dawn' || S.stage === 'end' ? 1 : 0) - B.dawnMix) * ease(dt, 2);
+  eff = eff * (1 - B.dawnMix) + 0.25 * B.dawnMix;
   B.eff = eff + (1 - eff) * B.flare;
 
   // the beam turns slowly toward the boat the Pilot has marked
@@ -559,7 +562,7 @@ function update(dt) {
   updateBoats(dt);
   if (S.stage === 'dawn' && !S.summaryShown) {
     const towing = S.boats.some(b => b.state === 'towing');
-    if ((!towing && S.stageT > 4) || S.stageT > 14) showDawn();
+    if ((!towing && S.stageT > CFG.dawnSummaryAfter) || S.stageT > CFG.dawnSummaryAfter + 6) showDawn();
   }
 }
 
@@ -580,12 +583,17 @@ function look() {
 
 function renderBackground(now) {
   const L0 = look(), fl = S.beam.flare, fm = 1 - 0.65 * fl, steady = S.beam.steady && fl < 0.5;
-  S.dens += (L0.dens - S.dens) * 0.02;                 // fog lifts / thickens gradually
-  const dens = S.dens;
-  let skyTop = C['sky-deep'], skyBot = C.sky;
-  if (L0.dawn) { skyTop = mixRGB(C.sky, C['sky-deep'], 0.4); skyBot = mixRGB(C.sky, C.lamp, 0.5); }
-  if (L0.storm) { skyTop = mixRGB(C['sky-deep'], C.outline, 0.5); skyBot = C['sky-deep']; }
-  const seaTop = L0.dawn ? mixRGB(C.sea, C.lamp, 0.18) : C.sea, sunX = W * 0.72, sunR = 10;
+  const dt = S.lastNow == null ? 0 : Math.min(0.1, now - S.lastNow); S.lastNow = now;
+  // fog, storm and sunrise ease in and out; the dawn ones are slow so the night ends gently
+  S.dens += (L0.dens - S.dens) * ease(dt, L0.dawn ? CFG.sunriseSec : 1);
+  S.stormAmt += ((L0.storm ? 1 : 0) - S.stormAmt) * ease(dt, L0.storm ? 1.5 : CFG.sunriseSec * 0.8);
+  S.sun += ((L0.dawn ? 1 : 0) - S.sun) * ease(dt, CFG.sunriseSec);
+  const dens = S.dens, sun = S.sun, storm = S.stormAmt;
+  const night = [C['sky-deep'], C.sky], stormy = [mixRGB(C['sky-deep'], C.outline, 0.5), C['sky-deep']],
+    dawnSky = [mixRGB(C.sky, C['sky-deep'], 0.4), mixRGB(C.sky, C.lamp, 0.5)];
+  const skyTop = mixRGB(mixRGB(night[0], stormy[0], storm), dawnSky[0], sun), skyBot = mixRGB(mixRGB(night[1], stormy[1], storm), dawnSky[1], sun);
+  const seaTop = mixRGB(C.sea, C.lamp, 0.18 * sun), sunX = W * 0.72, sunR = 10, sunY = HZ + (1 - sun) * (sunR + 3);
+  const starTh = L0.starTh + (1 - L0.starTh) * sun * 0.9;
   const crestOff = Math.floor(now * 1.2) % 490, rainOff = Math.floor(now * 9) % 880;
 
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -596,15 +604,15 @@ function renderBackground(now) {
     const i = y * W + x, b = bay(x, y);
     if (y < HZ) {
       const t = y / HZ; set(t > b ? skyBot : skyTop);
-      if (L0.dawn && t * 2 - 1 > b) { set(skyBot); mixT(C.beam, 0.25); }
-      if (!L0.storm && N.star[i] > L0.starTh && y < HZ - 5) set(C.star);
-      if (L0.dawn) { const sd = Math.hypot(x - sunX, (y - HZ) * 1.1); if (sd < sunR) set(sd < sunR - 2 ? C.beam : C['beam-core']); }
+      if (sun > 0.01 && t * 2 - 1 > b + (1 - sun)) { set(skyBot); mixT(C.beam, 0.25); }
+      if (storm < 0.5 && N.star[i] > starTh && y < HZ - 5) set(C.star);
+      if (sun > 0.01) { const sd = Math.hypot(x - sunX, (y - sunY) * 1.1); if (sd < sunR) set(sd < sunR - 2 ? C.beam : C['beam-core']); }   // the sun rises
     } else {
       const row = y - HZ, ts = row / (H - HZ);
       set(ts > b ? C['sea-deep'] : seaTop);
       const xx = x + 700 + (((row / 5) | 0) % 2 ? crestOff : -crestOff);
       if (row % 5 === 2 && ((xx + row * 3) % 7) < 3 && hash(Math.floor((xx + row * 3) / 7), row, 11) > 0.62) set(row < 10 ? C.crest : C['sea-light']);
-      if (L0.dawn && Math.abs(x - sunX) < sunR * (1 - ts) && row % 3 !== 0 && hash(x >> 1, row, 6) > 0.4) set(C.beam);
+      if (sun > 0.3 && Math.abs(x - sunX) < sunR * (1 - ts) && row % 3 !== 0 && hash(x >> 1, row, 6) > 1 - 0.6 * sun) set(C.beam);
     }
     const L = Larr[i];
     // fog
@@ -634,9 +642,9 @@ function renderBackground(now) {
       }
     }
     // storm rain, drifting slowly
-    if (L0.storm) {
+    if (storm > 0.02) {                                 // rain thins out as the storm passes
       const yy = y - rainOff + 990;
-      if (((x + yy * 2) % 11) === 0 && hash(Math.floor((x + yy * 2) / 11), Math.floor(yy / 5), 13) > 0.55) mixT(C.crest, 0.6);
+      if (((x + yy * 2) % 11) === 0 && hash(Math.floor((x + yy * 2) / 11), Math.floor(yy / 5), 13) > 1 - 0.45 * storm) mixT(C.crest, 0.6);
     }
     const k = i * 4; d[k] = cr; d[k + 1] = cg; d[k + 2] = cb; d[k + 3] = 255;
   }
@@ -704,7 +712,7 @@ function renderSprites() {
 // palette changes between stages dissolve through the Bayer pattern (no flash)
 function dissolve() {
   if (!S.snap) return;
-  const t = (performance.now() - S.transT0) / 1500;
+  const t = (performance.now() - S.transT0) / 1000 / S.transDur;
   if (t >= 1) { S.snap = null; return; }
   const cur = ctx.getImageData(0, 0, W, H), o = S.snap.data, n = cur.data;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
