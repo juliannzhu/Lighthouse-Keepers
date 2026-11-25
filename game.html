@@ -138,8 +138,9 @@ const CFG = {
   easeSec: 1, frostAbove: 50, steadyForFlare: 3, flareSec: 10,
   tides: 3,
   durations: { calm: 60, tide: 180, stormMax: 240 },
-  boatSpeed: 14, stormSpeed: 9,          // art pixels per second
-  maxBoats: 4, spawnEvery: [20, 32], noSpawnLastSec: 25,
+  boatSpeed: 10, stormSpeed: 7,          // art pixels per second
+  minBoats: 1, maxBoats: 3,              // boats on the water during a tide
+  spawnEvery: [20, 32], noSpawnLastSec: 25, arriveSpeed: 12,
   passengers: { row: 2, sail: 4, fish: 6, storm: 20 },
   litMin: 0.22,                          // light a boat needs to move (same as the kit's "in light")
   dockStaySec: 4,
@@ -274,19 +275,22 @@ function makeBoat(type, x, y) {
   return { type, x, y, w: sz.w, h: sz.h, passengers: CFG.passengers[type], state: 'sea', left: true,
     trail: [], pauseUntil: 0, status: 'ready', dockT: 0, slotX: 0, slotY: 0 };
 }
+// New boats sail in from the right edge to a waiting spot at the fog edge.
 function spawnBoat() {
   for (let tries = 0; tries < 60; tries++) {
-    const x = Math.round(rand(140, 222)), y = Math.round(rand(HZ + 12, 124));
-    if (S.boats.some(b => b.state === 'sea' && distTo(b.x, b.y, x, y) < 18)) continue;
+    const x = Math.round(rand(200, 224)), y = Math.round(rand(HZ + 12, 124));   // waiting spot near the right edge
+    if (activeBoats().some(b => distTo(b.x, b.y, x, y) < 18 || (b.x > x - 12 && Math.abs(b.y - y) < 12))) continue;  // spot and lane are clear
     if (S.rocks.some(r => distTo(r.x, r.y, x, y) < 14)) continue;
-    const type = x > 195 ? (Math.random() < 0.5 ? 'fish' : 'sail') : x > 165 ? (Math.random() < 0.5 ? 'sail' : 'row') : 'row';
+    const roll = Math.random(), type = roll < 0.5 ? 'row' : roll < 0.8 ? 'sail' : 'fish';
     const b = makeBoat(type, x, y);
+    b.state = 'arriving'; b.waitX = x; b.x = W + b.w / 2 - 3;   // bow already peeking in at the edge
     S.boats.push(b);
-    if (!selected()) S.sel = b;
-    return;
+    return true;
   }
+  return false;
 }
 const seaBoats = () => S.boats.filter(b => b.state === 'sea');
+const activeBoats = () => S.boats.filter(b => b.state === 'sea' || b.state === 'arriving');
 const selected = () => (S.sel && S.sel.state === 'sea') ? S.sel : null;
 function selectNext(dir = 1) {
   const list = seaBoats();
@@ -320,7 +324,8 @@ const distToPath = (pts, x, y) => Math.min(...pts.slice(1).map((p, i) => distToS
 
 function startStorm() {
   const ship = makeBoat('storm', 204, 66);
-  S.boats.push(ship); S.sel = ship;
+  ship.state = 'arriving'; ship.waitX = 204; ship.x = W + ship.w / 2 - 3;   // sails in out of the storm
+  S.boats.push(ship);
   const pts = [[196, 70], [170, 86], [140, 96], [112, 92], [90, 102], [DOCK.x + 2, DOCK.y + 8]];
   S.channel = pts;
   // buoy pairs either side of the channel, every ~16 px
@@ -362,14 +367,14 @@ function setStage(stage) {
     S.tide++;
     CFG.threshold = S.pending.threshold; CFG.holdSec = S.pending.holdSec;
     S.beam.count = 0; S.hist = []; S.tideStats = { above: 0, total: 0, steady: 0, boats: 0 };
-    spawnBoat(); spawnBoat(); autoSelect();
+    while (activeBoats().length < Math.min(2, CFG.maxBoats) && spawnBoat());
     S.nextSpawn = S.T + rand(...CFG.spawnEvery);
     say(S.tide === 1 ? 'Boats are coming! Keep the light steady to guide them home.' : `Tide ${S.tide}. More boats are on their way.`, 7);
   }
   if (stage === 'rest') say('Rest time. Stretch your arms and take a slow breath.', 1e9);
   if (stage === 'storm') { startStorm(); say('A big ship is in the storm. Hold the light steady to find its channel.', 8); }
   if (stage === 'dawn') {
-    S.boats.forEach(b => { if (b.state === 'sea') b.state = 'towing'; });
+    S.boats.forEach(b => { if (b.state === 'sea' || b.state === 'arriving') b.state = 'towing'; });
     say('The sun is coming up. The last boats are being towed home.', 8);
   }
   if (stage === 'end') say('Goodnight, keepers. See you tomorrow night.', 1e9);
@@ -450,6 +455,8 @@ let lit = () => 0;   // replaced each frame by makeLit()
 const boatLit = b => S.beam.flare > 0.5 || lit(b.x, b.y) > CFG.litMin;
 
 // ---------- boats ----------
+// boats touch when their hulls overlap (a little slack so sails can pass close by)
+const boatsTouch = (a, ax, ay, o) => Math.abs(ax - o.x) < (a.w + o.w) / 2 - 1 && Math.abs(ay - o.y) < (a.h + o.h) / 2 - 3;
 function tryMove(b, mx, my) {
   const hw = b.w / 2, hh = b.h / 2;
   const nx = clamp(b.x + mx, hw + 1, W - hw - 1), ny = clamp(b.y + my, HZ + 4 + hh, H - hh - 1);
@@ -494,7 +501,11 @@ function dockBoat(b, quiet) {
 function updateBoats(dt) {
   if (S.stage === 'tide' || S.stage === 'storm') steer(dt);
   for (const b of S.boats) {
-    if (b.state === 'docked') {
+    if (b.state === 'arriving') {
+      const nx = Math.max(b.waitX, b.x - CFG.arriveSpeed * dt);
+      if (!activeBoats().some(o => o !== b && boatsTouch(b, nx, b.y, o) && !boatsTouch(b, b.x, b.y, o))) b.x = nx;  // waits if a boat is in its lane
+      if (b.x <= b.waitX) { b.state = 'sea'; if (!selected() || b.type === 'storm') S.sel = b; }
+    } else if (b.state === 'docked') {
       b.x += (b.slotX - b.x) * ease(dt, 0.4); b.y += (b.slotY - b.y) * ease(dt, 0.4);
       const stays = S.stage === 'dawn' || S.stage === 'end' || b.type === 'storm';
       if (!stays && S.T - b.dockT > CFG.dockStaySec) b.state = 'gone';
@@ -530,8 +541,10 @@ function update(dt) {
   if (S.stage === 'tide') {
     S.histT += dt;
     if (S.histT >= 0.5) { S.histT = 0; S.hist.push({ t: S.stageT, a: r.att }); S.tideStats.total++; if (r.att != null && r.att >= CFG.threshold) S.tideStats.above++; }
-    if (S.T >= S.nextSpawn && S.stageT < CFG.durations.tide - CFG.noSpawnLastSec) {
-      if (seaBoats().length < CFG.maxBoats) spawnBoat();
+    const n = activeBoats().length;
+    if (n < CFG.minBoats) spawnBoat();                       // never leave the bay empty
+    else if (S.T >= S.nextSpawn) {
+      if (n < CFG.maxBoats && S.stageT < CFG.durations.tide - CFG.noSpawnLastSec) spawnBoat();
       S.nextSpawn = S.T + rand(...CFG.spawnEvery);
     }
     if (S.stageT >= CFG.durations.tide) nextStage();
@@ -662,7 +675,7 @@ function renderSprites() {
     // the Pilot's route: a dashed wake behind the boat
     b.trail.forEach((t, k) => { if (k % 5 < 3) px(p.route, t[0], t[1]); });
     const spr = LK.SPRITES[b.type], x0 = Math.round(b.x - b.w / 2), y0 = Math.round(b.y - b.h / 2);
-    const inLight = b.state !== 'sea' || S.stage === 'dawn' || boatLit(b);
+    const inLight = (b.state !== 'sea' && b.state !== 'arriving') || S.stage === 'dawn' || boatLit(b);
     LK.drawSprite(ctx, spr, x0, y0, p, inLight ? { flip: b.left } : { dim: 0.6, dimTo: 'fog', flip: b.left });
     if (!inLight) { px(p.lamp, x0 + Math.floor(b.w / 2), y0 - 2); px(LK.mix(p.lamp, p.fog, 0.5), x0 + Math.floor(b.w / 2), y0 - 1); }
     for (let f = 0; f < b.w; f += 3) px(p.crest, x0 + f, y0 + b.h);

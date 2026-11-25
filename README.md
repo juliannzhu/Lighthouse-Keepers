@@ -76,7 +76,7 @@ Open **http://localhost:8000/game** for the playable session from the design doc
 |---|---|---|---|
 | Lamp lighting | Harbour Night | The frost on the lamp clears as the headset signal settles. A setup card has the settings. | **Enter** starts the night |
 | Calm waters (1 min) | Sea Glass | No boats. The beam responds and the guide shows a calm, upright posture. | **Esc** pause |
-| Tides 1–3 (3 min each) | Sea Glass | Boats appear at the fog edge. Steer the marked boat to the dock. Boats move only in the light and stop in the dark. A steady beam reveals hidden rocks, and three steady beams make a flare. | **Arrow keys** steer, **Tab** next boat |
+| Tides 1–3 (3 min each) | Sea Glass | Boats sail in from the right edge (one to three at a time, never none). Steer the marked boat to the dock. Boats move only in the light and stop in the dark. A steady beam reveals hidden rocks, and three steady beams make a flare. | **Arrow keys** steer, **Tab** next boat |
 | Rests (between tides) | Sea Glass | A parent card shows the last tide's attention graph, threshold, hold time, signal and high-contrast switch. Changes apply when the next tide starts. | **Enter** starts the next tide |
 | Storm ship (after tide 3) | Deep Fjord | A steady beam reveals channel buoys. Steer the big ship between them to the dock. | **Arrow keys**, **Tab** |
 | Dawn | Harbour Night | The remaining boats are towed in. The team summary is compared with last night, and sea stars buy lighthouse decorations. | — |
