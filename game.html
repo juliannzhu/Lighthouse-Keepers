@@ -461,6 +461,8 @@ function tryMove(b, mx, my) {
   const hw = b.w / 2, hh = b.h / 2;
   const nx = clamp(b.x + mx, hw + 1, W - hw - 1), ny = clamp(b.y + my, HZ + 4 + hh, H - hh - 1);
   if (onLand(nx, ny, b.w)) return;
+  // another boat in the way: the steered boat stops; the other boat never moves
+  if (activeBoats().some(o => o !== b && boatsTouch(b, nx, ny, o) && !boatsTouch(b, b.x, b.y, o))) return;
   for (const r of S.rocks) {
     if (!rockHits(r, nx, ny, hw, hh) || rockHits(r, b.x, b.y, hw, hh)) continue;
     if (r.revealed) return;                       // charted rock: the boat simply can't go there
