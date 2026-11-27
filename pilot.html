@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en" data-theme="harbour-night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lighthouse Keepers · Harbour Pilot</title>
+<link rel="stylesheet" href="lighthouse-keepers-handoff/design-system/tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* The parent's screen: plain, readable, not pixel art (design system: parent-* styles on surface-raised cards). */
+  html, body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-read); }
+  * { box-sizing: border-box; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: var(--space-4); }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); margin-bottom: var(--space-4); }
+  header h1 { margin: 0 auto 0 0; }
+  .pill { display: inline-flex; align-items: center; gap: var(--space-2); padding: 4px 12px; border-radius: 999px;
+    background: var(--surface-raised); border: 1px solid var(--border); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+  .dot.on { background: var(--success); }
+  .grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--space-4); align-items: start; }
+  .col { display: grid; gap: var(--space-4); }
+  .card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-4); }
+  .card h2 { margin: 0 0 var(--space-2); }
+  .card h3 { margin: var(--space-4) 0 var(--space-1); font-weight: 700; }
+  .cap { color: var(--ink-muted); }
+  .stage { font-size: 30px; line-height: 36px; font-weight: 700; margin: 0 0 var(--space-2); }
+  .note { border-left: 3px solid var(--accent); padding-left: var(--space-2); margin: var(--space-2) 0; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-4) 0 var(--space-2); }
+  .btn { font: inherit; font-weight: 700; padding: 10px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--surface); color: var(--ink); cursor: pointer; }
+  .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  ul.keys { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+  kbd { font-family: var(--font-read); font-weight: 700; font-size: 14px; padding: 1px 6px; border: 1px solid var(--border);
+    border-bottom-width: 3px; border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-2) var(--space-4); }
+  .stat .val { font-size: 28px; line-height: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  canvas.graph { width: 100%; height: 140px; display: block; margin: var(--space-2) 0; }
+  .legend { display: flex; gap: var(--space-4); }
+  .legend i { width: 18px; height: 3px; display: inline-block; vertical-align: middle; margin-right: 6px; }
+  label.set { display: block; margin: var(--space-4) 0 var(--space-1); font-weight: 700; }
+  label.check { display: flex; gap: var(--space-2); align-items: center; margin-top: var(--space-4); }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
+  .ends { display: flex; justify-content: space-between; }
+  .seg { display: flex; gap: var(--space-1); }
+  .seg button { flex: 1; font: inherit; padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--surface); color: var(--ink); cursor: pointer; }
+  .seg button.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+  .sig { display: inline-flex; align-items: flex-end; gap: 3px; height: 20px; }
+  .sig i { width: 6px; background: var(--success); }
+  .sig i.off { background: var(--border); }
+  ol, ul.plain { margin: var(--space-2) 0; padding-left: var(--space-6); }
+  .hidden { display: none !important; }
+  button:focus-visible, input:focus-visible { outline: var(--space-1) solid var(--ink); outline-offset: var(--space-2); }
+  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="parent-heading">Harbour Pilot</h1>
+    <span class="pill parent-caption"><span class="dot" id="gameDot"></span><span id="gameText">Waiting for the game…</span></span>
+    <span class="pill parent-caption"><span class="sig" id="sigBars"><i style="height:6px"></i><i style="height:10px"></i><i style="height:14px"></i><i style="height:20px"></i></span><span id="sigText">Headset: no data</span></span>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card" aria-live="polite">
+        <div class="parent-caption cap" id="stageSmall">Now</div>
+        <p class="stage" id="stageName">Open the game</p>
+        <p class="parent-body" id="help">Open <b id="gameUrl"></b> on the screen the Keeper will watch. This page shows what to do at each stage.</p>
+        <div id="notes"></div>
+        <div class="parent-body cap" id="timeLeft"></div>
+        <div class="btnrow">
+          <button class="btn primary" id="mainBtn" disabled>Start the night</button>
+          <button class="btn" id="pauseBtn" disabled>Pause</button>
+          <button class="btn hidden" id="frostBtn">Test frosty lamp</button>
+        </div>
+        <h3 class="parent-body">Keys on the game screen</h3>
+        <ul class="keys parent-body" id="keys"></ul>
+      </section>
+
+      <section class="card" id="restCard">
+        <h2 class="parent-heading" id="restTitle">How the last tide went</h2>
+        <p class="parent-body" id="restText"></p>
+      </section>
+
+      <section class="card" id="setupCard">
+        <h2 class="parent-heading">Before the night</h2>
+        <ol class="parent-body">
+          <li>Open the game on the screen the Keeper will watch, and press <kbd>F</kbd> there for full screen.</li>
+          <li>Turn the headset on and help the Keeper sit comfortably.</li>
+          <li>Put the sensor flat on the forehead and the clip on the ear lobe.</li>
+          <li>Wait for the frost on the lamp to clear, then start the night.</li>
+        </ol>
+        <p class="parent-caption cap">Keep your talk short and positive. Try "Nice steady light!"</p>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card">
+        <h2 class="parent-heading">Tonight</h2>
+        <div class="stats">
+          <div class="stat"><div class="parent-caption cap">Boats home</div><div class="val" id="vHome">—</div></div>
+          <div class="stat"><div class="parent-caption cap">Passengers home</div><div class="val" id="vPass">—</div></div>
+          <div class="stat"><div class="parent-caption cap">Boats on the water</div><div class="val" id="vWater">—</div></div>
+          <div class="stat"><div class="parent-caption cap">Steady beams toward a flare</div><div class="val" id="vSteady">—</div></div>
+        </div>
+        <p class="parent-body" id="marked"></p>
+        <h3 class="parent-body">Keeper's attention</h3>
+        <div class="parent-caption cap">Last 2 minutes. Only you see this; the Keeper never sees a number.</div>
+        <canvas class="graph" id="graph" aria-label="Line graph of the Keeper's attention over the last two minutes against the threshold line"></canvas>
+        <div class="legend parent-caption"><span><i style="background:var(--accent)"></i>Attention</span><span><i style="background:var(--ink-muted)"></i>Threshold</span></div>
+        <h3 class="parent-body">Encouraging things to say</h3>
+        <ul class="plain parent-body"><li>"Nice steady light!"</li><li>"Look how far the beam reaches."</li><li>"Let's take a slow breath together."</li></ul>
+      </section>
+
+      <section class="card">
+        <h2 class="parent-heading">Settings</h2>
+        <label class="set parent-body" for="th">Light threshold: <span id="thVal">—</span></label>
+        <input id="th" type="range" min="10" max="90" step="1" value="45">
+        <div class="ends parent-caption cap"><span>Easier</span><span>Harder</span></div>
+        <label class="set parent-body">Hold time for a steady beam</label>
+        <div class="seg" id="hold"><button data-s="2">2 s</button><button data-s="3">3 s</button><button data-s="4">4 s</button></div>
+        <label class="check parent-body"><input type="checkbox" id="hc"> High-contrast colours (Storm Ink)</label>
+        <p class="parent-caption cap" id="applyNote">Threshold and hold time change when the next tide starts, so the Keeper isn't interrupted.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const kb = k => `<kbd>${k}</kbd>`;
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+$('gameUrl').textContent = `${location.host}/game`;
+
+let G = null, lastStateAt = 0, editing = false;
+const graph = [];   // { t, a } by local time, last 120 s
+
+// ---------- talk to the game through the bridge ----------
+const es = new EventSource('/events');
+es.onmessage = ev => {
+  const msg = JSON.parse(ev.data);
+  if (msg.type !== 'game-state') return;
+  G = msg.state; lastStateAt = Date.now();
+  graph.push({ t: lastStateAt, a: G.attention });
+  while (graph.length && graph[0].t < lastStateAt - 120000) graph.shift();
+  render();
+};
+const send = body => fetch('/pilot/cmd', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
+
+// ---------- what each stage needs from the Pilot ----------
+const NAMES = { lighting: 'Lamp lighting', calm: 'Calm waters', rest: 'Rest', storm: 'The storm ship', dawn: 'Dawn', end: 'Goodnight' };
+const HELP = {
+  lighting: 'Put the headset on the Keeper. The frost on the lamp clears as the signal settles. Start the night when the lamp is clear.',
+  calm: 'No boats yet. Let the Keeper see the beam respond. Try saying "Look how far the beam reaches."',
+  tide: 'Steer the marked boat to the dock beside the lighthouse. Boats move only in the light and wait in the dark.',
+  rest: 'A short rest. The Keeper can use the Shop, Decorate, Logbook and Rescue album buttons on the game screen. Change the settings if you like, then start the next tide.',
+  storm: 'A steady beam shows the buoys. Steer the big ship between them to the dock. Rocks block the way outside the channel.',
+  dawn: 'The last boats are towed home. Read the result together. Then the Keeper can spend sea stars in the shop, decorate the lighthouse, and look at the logbook and rescue album.',
+  end: 'The night is over. Start a new night whenever you are ready.',
+};
+const TIDE_NOTES = {
+  1: ['Open water: the easiest bay.', 'Mostly rowing boats (2 passengers each).'],
+  2: ['Twin Isles sit in the middle of the bay, with Pebble Islet below them. Steer above or below the islands.', 'More sail boats (4 passengers), a few fishing boats (6). A light drizzle.'],
+  3: ['Pine Forest Isle (top) and the Old Keeper\'s Ruins (bottom) leave a gap in the middle. Steer through it, or around the top or bottom edge.',
+      'A steady beam on the ruins earns the Keeper a logbook badge. Mark a boat near them so the beam turns that way.',
+      'A gentle current pushes lit boats slowly down the bay. Steer against it.',
+      'Mostly fishing boats (6 passengers). Windy, with more whitecaps.'],
+};
+const FERRY = { hidden: 'A ferry with 10 passengers is hidden in the fog on the right. Mark a boat near it so the beam sweeps that way; a steady beam will find it.',
+  found: 'The Keeper found the ferry! Steer it home with the others.', home: 'The ferry is home.' };
+const STATUS = { dark: 'waiting for light', bumped: 'bumped a hidden rock (a steady beam shows the rocks)', moving: 'sailing', ready: 'ready to steer' };
+const BOAT = { row: 'rowing boat', sail: 'sail boat', fish: 'fishing boat', ferry: 'ferry', storm: 'storm ship' };
+
+function mainAction(g) {
+  return { lighting: 'Start the night', calm: 'Skip to tide 1', rest: `Start tide ${g.tide + 1}`, storm: 'Skip to dawn', end: 'Start a new night' }[g.stage]
+    || (g.stage === 'tide' ? (g.tide < g.tides ? 'Skip to the rest' : 'Skip to the storm ship') : g.summaryShown ? 'End the night' : 'Show the summary');
+}
+
+function render() {
+  const g = G, st = g.stage, inPlay = ['calm', 'tide', 'storm'].includes(st);
+  $('stageSmall').textContent = st === 'tide' ? `Tide ${g.tide} of ${g.tides}` : 'Now';
+  $('stageName').textContent = (st === 'tide' ? `Tide ${g.tide}` : NAMES[st]) + (g.paused ? ' (paused)' : '');
+  $('help').textContent = HELP[st];
+
+  const notes = [];
+  if (st === 'tide' || (st === 'rest' && g.tide < g.tides)) {
+    const n = st === 'rest' ? g.tide + 1 : g.tide;
+    if (st === 'rest') notes.push(`Coming up in tide ${n}:`);
+    notes.push(...TIDE_NOTES[n]);
+  }
+  if (st === 'storm') notes.push('The channel runs through the gap between the two islands.');
+  const SCREENS = { shop: 'the shop', decorate: 'decorate mode', logbook: 'the logbook', album: 'the rescue album' };
+  if (g.screen) notes.push(`The Keeper has ${SCREENS[g.screen]} open. Starting the next stage closes it.`);
+  if ((st === 'tide' || st === 'storm') && g.ferry !== 'none' && FERRY[g.ferry]) notes.push(FERRY[g.ferry]);
+  $('notes').innerHTML = notes.map(n => `<p class="parent-body note">${n}</p>`).join('');
+
+  $('timeLeft').textContent = st === 'calm' ? `Tide 1 starts in ${mmss(Math.max(0, g.durations.calm - g.stageT))}`
+    : st === 'tide' ? `${mmss(Math.max(0, g.durations.tide - g.stageT))} left in this tide` : '';
+
+  const keys = [];
+  if (['lighting', 'rest', 'end'].includes(st)) keys.push(`${kb('Enter')} ${mainAction(g).toLowerCase()}`);
+  if (st === 'tide' || st === 'storm') keys.push(`${kb('←')} ${kb('↑')} ${kb('→')} ${kb('↓')} steer the marked boat`, `${kb('Tab')} mark the next boat`);
+  if (inPlay) keys.push(`${kb('Esc')} pause`);
+  if (st !== 'end') keys.push(`${kb('N')} skip to the next stage`);
+  keys.push(`${kb('F')} full screen`);
+  if (!g.headset) keys.push(`${kb('Space')} hold for simulated attention (no headset)`, `${kb('I')} test the frosty lamp`);
+  $('keys').innerHTML = keys.map(k => `<li>${k}</li>`).join('');
+
+  $('mainBtn').disabled = false; $('mainBtn').textContent = mainAction(g);
+  $('pauseBtn').disabled = !inPlay; $('pauseBtn').textContent = g.paused ? 'Carry on' : 'Pause';
+  $('frostBtn').classList.toggle('hidden', g.headset);
+  $('frostBtn').textContent = g.simFrost ? 'Clear the frosty lamp' : 'Test frosty lamp';
+
+  // stats
+  $('vHome').textContent = g.boatsHome; $('vPass').textContent = g.passengers;
+  $('vWater').textContent = st === 'tide' || st === 'storm' ? g.onWater : '—';
+  $('vSteady').textContent = g.flare ? 'Flare!' : `${g.steady} of ${g.steadyForFlare}`;
+  $('marked').textContent = g.marked ? `Marked boat: ${BOAT[g.marked.type]} with ${g.marked.passengers} passengers, ${STATUS[g.marked.status] || g.marked.status}.` : '';
+
+  // rest summary
+  const ts = g.tideStats, showRest = st === 'rest' && ts;
+  $('restCard').classList.toggle('hidden', !showRest);
+  if (showRest) {
+    const pct = ts.total ? Math.round(ts.above / ts.total * 100) : 0;
+    const hint = pct > 70 ? 'The Keeper found this tide easy. You could raise the threshold a little.'
+      : pct < 25 ? 'This tide was hard work. Lowering the threshold a little could help.' : 'This threshold looks about right.';
+    $('restTitle').textContent = `How tide ${g.tide} went`;
+    $('restText').textContent = `${ts.boats} boat${ts.boats === 1 ? '' : 's'} home this tide. ${ts.steady} steady beam${ts.steady === 1 ? '' : 's'}. Above the threshold ${pct}% of the time. ${hint}`;
+  }
+  $('setupCard').classList.toggle('hidden', st !== 'lighting');
+
+  // signal
+  const p = g.poor;
+  const [bars, word] = !g.headset ? [4, 'simulator (no headset)'] : p == null ? [0, 'no data'] : p === 0 ? [4, 'good']
+    : p <= 50 ? [3, 'fair'] : p < 200 ? [2, 'noisy'] : [0, 'not touching skin'];
+  [...$('sigBars').children].forEach((el, i) => el.classList.toggle('off', i >= bars));
+  $('sigText').textContent = 'Headset: ' + word;
+
+  // settings (don't fight the parent while they're dragging)
+  if (!editing) {
+    $('th').value = g.pending.threshold; $('thVal').textContent = g.pending.threshold;
+    markHold(g.pending.holdSec);
+    $('hc').checked = g.highContrast;
+  }
+  $('applyNote').textContent = g.pending.threshold !== g.threshold || g.pending.holdSec !== g.holdSec
+    ? `Now: threshold ${g.threshold}, hold ${g.holdSec} s. Your changes start with the next tide, so the Keeper isn't interrupted.`
+    : 'Threshold and hold time change when the next tide starts, so the Keeper isn\'t interrupted.';
+  drawGraph();
+}
+
+// ---------- controls ----------
+$('mainBtn').onclick = () => send({ cmd: 'next' });
+$('pauseBtn').onclick = () => send({ cmd: 'pause' });
+$('frostBtn').onclick = () => send({ cmd: 'frost' });
+$('th').addEventListener('pointerdown', () => { editing = true; });
+$('th').addEventListener('change', () => { editing = false; });
+$('th').oninput = e => { $('thVal').textContent = e.target.value; send({ cmd: 'settings', threshold: +e.target.value }); };
+const holdBtns = [...$('hold').children];
+function markHold(s) { holdBtns.forEach(b => b.classList.toggle('on', +b.dataset.s === s)); }
+holdBtns.forEach(b => b.onclick = () => { markHold(+b.dataset.s); send({ cmd: 'settings', holdSec: +b.dataset.s }); });
+$('hc').onchange = e => send({ cmd: 'settings', highContrast: e.target.checked });
+
+// ---------- live attention graph ----------
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function drawGraph() {
+  const cv = $('graph'), r = devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== w * r || cv.height !== h * r) { cv.width = w * r; cv.height = h * r; }
+  const c = cv.getContext('2d'); c.setTransform(r, 0, 0, r, 0, 0); c.clearRect(0, 0, w, h);
+  c.strokeStyle = css('--border'); c.lineWidth = 1;
+  for (let i = 1; i < 4; i++) { c.beginPath(); c.moveTo(0, h * i / 4 + .5); c.lineTo(w, h * i / 4 + .5); c.stroke(); }
+  if (!G) return;
+  const ty = h * (1 - G.threshold / 100);
+  c.strokeStyle = css('--ink-muted'); c.setLineDash([6, 5]); c.lineWidth = 2; c.beginPath(); c.moveTo(0, ty); c.lineTo(w, ty); c.stroke(); c.setLineDash([]);
+  c.strokeStyle = css('--accent'); c.lineWidth = 2.5; c.beginPath();
+  const now = Date.now(); let started = false;
+  for (const pt of graph) {
+    if (pt.a == null) { started = false; continue; }
+    const x = w * (1 - (now - pt.t) / 120000), y = h * (1 - pt.a / 100);
+    started ? c.lineTo(x, y) : c.moveTo(x, y); started = true;
+  }
+  c.stroke();
+}
+
+// connection status
+setInterval(() => {
+  const on = Date.now() - lastStateAt < 3000;
+  $('gameDot').classList.toggle('on', on);
+  $('gameText').textContent = on ? 'Game connected' : `Waiting for the game: open ${location.host}/game`;
+  if (!on) { $('mainBtn').disabled = true; $('pauseBtn').disabled = true; }
+  drawGraph();
+}, 1000);
+</script>
+</body>
+</html>
