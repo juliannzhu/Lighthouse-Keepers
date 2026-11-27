@@ -186,6 +186,7 @@ function newNight() {
     dens: 0.72, hist: [], histT: 0, tideStats: null, pending: { threshold: CFG.threshold, holdSec: CFG.holdSec },
     highContrast: store.get('highContrast', false), guide: { text: '', until: 0 }, nextSpawn: 0,
     channelOnce: false, summaryShown: false, dawnPick: null, snap: null, transT0: 0, transDur: 1.5, sun: 0, stormAmt: 0, lastNow: null,
+    layout: 1,
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
   makeNightRocks();
@@ -213,12 +214,70 @@ function applyTheme(theme) {
   drawIcons();
 }
 
+// ---------- bay layouts (one per tide; the storm keeps tide 3's) ----------
+// Islands come from design-system/data/islands.json, placed by their top-left corner in art pixels.
+// clear: spots rocks keep away from, so the lanes around the islands stay open.
+const LAYOUTS = {
+  1: { islands: [], clear: [] },                                                              // open water
+  2: { islands: [{ id: 'twin', x: 124, y: 72 }, { id: 'pebble', x: 170, y: 103 }],            // small and medium: go above or below
+       clear: [[141, 66], [141, 95], [178, 95], [160, 120]] },
+  3: { islands: [{ id: 'forest', x: 120, y: 58 }, { id: 'ruins', x: 128, y: 98 }],            // two large islands, a gap in the middle
+       clear: [[148, 89], [142, 56], [146, 124]] },
+};
+// each island's solid footprint (top + cliff), the same shape LK.drawIsland draws
+const ISLE = {};
+function isleShape(id) {
+  if (ISLE[id]) return ISLE[id];
+  const I = LK.DATA.islands.find(i => i.id === id);
+  const inE = (e, x, y) => ((x - e[0]) / e[2]) ** 2 + ((y - e[1]) / e[3]) ** 2 <= 1;
+  const top = (x, y) => x >= 0 && y >= 0 && x < I.w && y < I.h && I.blobs.some(e => inE(e, x, y)) && !(I.holes || []).some(e => inE(e, x, y));
+  const w = I.w, h = I.h + I.cliff, solid = new Uint8Array(w * h);
+  let sx = 0, sy = 0, n = 0;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let on = top(x, y);
+    for (let k = 1; !on && k <= I.cliff; k++) on = top(x, y - k);
+    if (on) { solid[y * w + x] = 1; sx += x; sy += y; n++; }
+  }
+  return ISLE[id] = { I, w, h, solid, cx: sx / n, cy: sy / n };
+}
+const bayLayout = () => LAYOUTS[S.layout] || LAYOUTS[1];
+function onFeature(x, y) {
+  for (const i of bayLayout().islands) {
+    const sh = isleShape(i.id), lx = Math.round(x - i.x), ly = Math.round(y - i.y);
+    if (lx >= 0 && ly >= 0 && lx < sh.w && ly < sh.h && sh.solid[ly * sh.w + lx]) return true;
+  }
+  return false;
+}
+// points along a boat's hull, so wide boats can't clip an island
+function hullOnFeature(x, y, w, h) {
+  const hw = Math.max(0, w / 2 - 1), yb = y + h / 2 - 1;
+  return [[x - hw, yb], [x, yb], [x + hw, yb], [x - hw, y], [x + hw, y], [x, y]].some(([a, b]) => onFeature(a, b));
+}
+// rocks keep away from land and never block the gaps boats need
+const rockSpotBad = (x, y) => [[0, 0], [6, 0], [-6, 0], [0, 5], [0, -5]].some(([a, b]) => onFeature(x + a, y + b))
+  || bayLayout().clear.some(([cx, cy]) => distTo(cx, cy, x, y) < 16);
+function setLayout(n) {
+  S.layout = n;
+  S.rocks = S.rocks.filter(r => !rockSpotBad(r.x, r.y));
+  makeNightRocks();
+  // any boat now sitting on new land moves to the nearest open water
+  for (const b of S.boats) {
+    if (b.state !== 'sea') continue;
+    if (!onLand(b.x, b.y, b.w, b.h)) continue;
+    outer: for (let r = 2; r < 60; r += 2) for (let a = 0; a < 16; a++) {
+      const x = b.x + Math.cos(a * Math.PI / 8) * r, y = b.y + Math.sin(a * Math.PI / 8) * r;
+      if (x < b.w / 2 + 1 || x > W - b.w / 2 - 1 || y > H - b.h / 2 - 1 || onLand(x, y, b.w, b.h)) continue;
+      b.x = x; b.y = y; b.trail = []; break outer;
+    }
+  }
+}
+
 // ---------- rocks, boats, channel ----------
 const distTo = (a, b, x, y) => Math.hypot(a - x, b - y);
 function makeNightRocks() {
   for (let tries = 0; S.rocks.length < 7 && tries < 400; tries++) {
     const x = Math.round(rand(85, 215)), y = Math.round(rand(HZ + 12, 126));
-    if (S.rocks.some(r => distTo(r.x, r.y, x, y) < 20) || distTo(DOCK.x, DOCK.y, x, y) < 26) continue;
+    if (S.rocks.some(r => distTo(r.x, r.y, x, y) < 20) || distTo(DOCK.x, DOCK.y, x, y) < 26 || rockSpotBad(x, y)) continue;
     S.rocks.push({ x, y, revealed: false, splashUntil: 0 });
   }
 }
@@ -238,6 +297,7 @@ function spawnBoat() {
     if (S.rocks.some(r => distTo(r.x, r.y, x, y) < 14)) continue;
     const roll = Math.random(), type = roll < 0.5 ? 'row' : roll < 0.8 ? 'sail' : 'fish';
     const b = makeBoat(type, x, y);
+    if (onLand(x, y, b.w, b.h)) continue;
     b.state = 'arriving'; b.waitX = x; b.x = W + b.w / 2 - 3;   // bow already peeking in at the edge
     S.boats.push(b);
     return true;
@@ -261,6 +321,7 @@ function autoSelect() {
 
 function onLand(x, y, hw, h = 2) {
   if (y < HZ + 4) return true;
+  if (hullOnFeature(x, y, hw, h)) return true;
   const r = y - BY;
   if (r >= -2 && r <= 10 && Math.abs(x - BX) < 15 + 1.4 * Math.max(0, r) + 2 + hw * 0.5) return true;
   if (y < BY && Math.abs(x - BX) < 8 + hw * 0.5) return true;
@@ -281,7 +342,7 @@ function startStorm() {
   const ship = makeBoat('storm', 204, 66);
   ship.state = 'arriving'; ship.waitX = 204; ship.x = W + ship.w / 2 - 3;   // sails in out of the storm
   S.boats.push(ship);
-  const pts = [[196, 70], [170, 86], [140, 96], [112, 92], [90, 102], [DOCK.x + 2, DOCK.y + 8]];
+  const pts = [[196, 70], [172, 86], [148, 90], [118, 92], [92, 102], [DOCK.x + 2, DOCK.y + 8]];   // through the gap between the islands
   S.channel = pts;
   // buoy pairs either side of the channel, every ~16 px
   S.buoys = [];
@@ -299,7 +360,7 @@ function startStorm() {
   S.rocks = S.rocks.filter(r => distToPath(pts, r.x, r.y) > 13);
   for (let tries = 0, added = 0; added < 14 && tries < 600; tries++) {
     const x = Math.round(rand(88, 228)), y = Math.round(rand(HZ + 8, 128));
-    if (distToPath(pts, x, y) < 14 || distTo(204, 66, x, y) < 22 || distTo(DOCK.x, DOCK.y, x, y) < 22) continue;
+    if (distToPath(pts, x, y) < 14 || distTo(204, 66, x, y) < 22 || distTo(DOCK.x, DOCK.y, x, y) < 22 || rockSpotBad(x, y)) continue;
     if (S.rocks.some(r => distTo(r.x, r.y, x, y) < 12)) continue;
     S.rocks.push({ x, y, revealed: false, splashUntil: 0 }); added++;
   }
@@ -319,6 +380,7 @@ function setStage(stage) {
   }
   if (stage === 'tide') {
     S.tide++;
+    if (S.layout !== S.tide) setLayout(S.tide);
     CFG.threshold = S.pending.threshold; CFG.holdSec = S.pending.holdSec;
     S.beam.count = 0; S.hist = []; S.tideStats = { above: 0, total: 0, steady: 0, boats: 0 };
     while (activeBoats().length < Math.min(2, CFG.maxBoats) && spawnBoat());
@@ -605,9 +667,14 @@ function renderBackground(now) {
 
 function px(c, x, y, w, h) { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w || 1, h || 1); }
 
+function drawBay(p) {
+  for (const i of bayLayout().islands) LK.drawIsland(ctx, p, i.id, i.x, i.y, {});
+}
+
 function renderSprites() {
   const p = P, T = S.T;
   LK.island(ctx, p, BX, BY);
+  drawBay(p);
   const lampLit = S.stage === 'lighting' ? 0.6 * (S.reading ? S.reading.q : 0) : S.beam.eff;
   LK.lighthouse(ctx, p, BX, BY, CFG.lighthouse, lampLit, frosty());
   // decorations the Keeper chose on past nights
@@ -747,7 +814,7 @@ function pilotState() {
     steady: S.beam.count, steadyForFlare: CFG.steadyForFlare, flare: S.beam.flare > 0.5,
     attention: r.att ?? null, poor: r.poor ?? null, headset: headsetLive(), bridgeOn: IN.bridge, simFrost: IN.simFrost,
     threshold: CFG.threshold, holdSec: CFG.holdSec, pending: S.pending, highContrast: S.highContrast,
-    tideStats: S.tideStats, summaryShown: S.summaryShown, layout: 1, current: false, ferry: 'none',
+    tideStats: S.tideStats, summaryShown: S.summaryShown, layout: S.layout, current: false, ferry: 'none',
     marked: b ? { type: b.type, status: b.status, passengers: b.passengers } : null,
   };
 }
