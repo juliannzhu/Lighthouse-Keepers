@@ -559,7 +559,12 @@ function startStorm() {
 
 // ---------- stages ----------
 const STAGE_NAME = { lighting: 'Lamp lighting', calm: 'Calm waters', rest: 'Rest', storm: 'Storm ship', dawn: 'Dawn', end: 'Dawn' };
-function say(text, secs) { S.guide.text = text; S.guide.until = S.T + (secs || 5); }
+const inRound = () => S.stage === 'calm' || S.stage === 'tide' || S.stage === 'storm';
+// During a round the guide speaks only when the round starts and at a flare (say(..., true)), so it stays quiet and off the boats.
+function say(text, secs, inRoundToo) {
+  if (inRound() && !inRoundToo) return;
+  S.guide.text = text; S.guide.until = S.T + (secs || 5);
+}
 
 function setStage(stage) {
   S.stage = stage; S.stageT = 0;
@@ -567,7 +572,7 @@ function setStage(stage) {
   S.guide.until = 0; S.beam.lowSince = S.T;
   if (stage === 'calm') {
     CFG.threshold = S.pending.threshold; CFG.holdSec = S.pending.holdSec;
-    say('Look at the lighthouse. Sit tall and watch the beam grow.', 8);
+    say('Look at the lighthouse. Sit tall and watch the beam grow.', 8, true);
   }
   if (stage === 'tide') {
     S.tide++;
@@ -579,10 +584,10 @@ function setStage(stage) {
     S.nextSpawn = S.T + rand(...CFG.spawnEvery);
     say(S.tide === 1 ? 'Boats are coming! Keep the light steady to guide them home.'
       : S.tide === CFG.ferryTide ? `Tide ${S.tide}. Something big is hiding in the fog. A steady beam might find it.`
-      : `Tide ${S.tide}. More boats are on their way.`, 7);
+      : `Tide ${S.tide}. More boats are on their way.`, 7, true);
   }
   if (stage === 'rest') say('Rest time. Stretch your arms and take a slow breath.', 1e9);
-  if (stage === 'storm') { startStorm(); say('A big ship is in the storm. Hold the light steady to find its channel.', 8); }
+  if (stage === 'storm') { startStorm(); say('A big ship is in the storm. Hold the light steady to find its channel.', 8, true); }
   if (stage === 'dawn') {
     S.boats.forEach(b => { if (['sea', 'arriving', 'hidden'].includes(b.state)) b.state = 'towing'; });   // nothing is left behind, not even an unfound ferry
     say('The sun is coming up. The last boats are being towed home.', 8);
@@ -624,7 +629,7 @@ function updateBeam(r, dt) {
     if (!B.steady && T - B.aboveSince >= CFG.holdSec) {
       B.steady = true; S.night.steady++;
       if (S.tideStats) S.tideStats.steady++;
-      if (!flaring && ++B.count >= CFG.steadyForFlare) { B.flareUntil = T + CFG.flareSec; S.night.flares++; say('A flare! The whole bay is lit.', 5); }
+      if (!flaring && ++B.count >= CFG.steadyForFlare) { B.flareUntil = T + CFG.flareSec; S.night.flares++; say('A flare! The whole bay is lit.', 5, true); }
       else if (!flaring) say(S.stage === 'calm' ? 'A steady beam! See the sparkles?' : 'Steady beam! Hidden rocks are showing.', 4);
     }
   }
@@ -1030,14 +1035,12 @@ function frostIcon() {
   return cv;
 }
 
-const CALM_LINES = ['Sit tall, feet flat, hands resting in your lap.', 'Keep your eyes on the light.', 'Breathe slowly and watch the beam grow.', 'Shoulders soft, back tall, like a lighthouse.'];
 function guideText() {
+  const st = S.stage;
+  if (inRound()) return S.T < S.guide.until ? { text: S.guide.text } : null;   // the Pilot page shows the headset signal
   if (frosty()) return { frost: true, text: 'Lamp is frosty — grown-up, check the headset' };
   if (S.T < S.guide.until) return { text: S.guide.text };
-  const st = S.stage;
   if (st === 'lighting') return { text: S.reading && S.reading.q >= 0.75 ? 'The lamp is ready. Sit tall and keep your eyes on the light.' : 'Sit tall. The lamp is warming up.' };
-  if (st === 'calm') return { text: CALM_LINES[Math.floor(S.stageT / 12) % CALM_LINES.length] };
-  if ((st === 'tide' || st === 'storm') && S.T - S.beam.lowSince > 8) return { text: 'Sit tall and keep your eyes on the light.' };
   return null;
 }
 
