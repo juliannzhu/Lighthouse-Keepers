@@ -12,6 +12,7 @@ Usage:
   python3 bridge.py --serial /dev/cu.MindLink
   python3 bridge.py --tgc                    # force ThinkGear Connector
   python3 bridge.py --demo                   # simulated data, no headset needed
+  python3 bridge.py --lan                    # also let phones/tablets on the same Wi-Fi open /pilot
 """
 import argparse
 import glob
@@ -38,12 +39,16 @@ clients_lock = threading.Lock()
 raw_buffer = []
 raw_lock = threading.Lock()
 bridge_status = {"type": "bridge", "status": "connecting"}
+game_state = None  # latest state from the game page, relayed to the Pilot page
+MAX_POST = 64 * 1024
 
 
 def broadcast(msg):
-    global bridge_status
+    global bridge_status, game_state
     if msg["type"] == "bridge":
         bridge_status = msg  # remember latest status for pages that connect later
+    if msg["type"] == "game-state":
+        game_state = msg
     data = json.dumps(msg, separators=(",", ":"))
     with clients_lock:
         for q in list(clients):
@@ -319,9 +324,28 @@ class Handler(SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
+    def do_POST(self):
+        """Relay between the game page and the Pilot page: /pilot/state (game -> pilot), /pilot/cmd (pilot -> game)."""
+        kinds = {"/pilot/state": ("game-state", "state"), "/pilot/cmd": ("pilot-cmd", "cmd")}
+        if self.path not in kinds:
+            return self.send_error(404)
+        length = int(self.headers.get("Content-Length") or 0)
+        if not 0 < length <= MAX_POST:
+            return self.send_error(413)
+        try:
+            body = json.loads(self.rfile.read(length))
+        except ValueError:
+            return self.send_error(400)
+        kind, key = kinds[self.path]
+        broadcast({"type": kind, key: body})
+        self.send_response(204)
+        self.end_headers()
+
     def do_GET(self):
         if self.path == "/events":
             return self.stream()
+        if self.path.rstrip("/") == "/pilot":
+            self.path = "/pilot.html"
         if self.path.rstrip("/") == "/harbour":
             self.path = "/harbour.html"
         if self.path.rstrip("/") == "/game":
@@ -335,6 +359,8 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         q = queue.Queue(maxsize=2000)
         q.put_nowait(json.dumps(bridge_status))
+        if game_state:
+            q.put_nowait(json.dumps(game_state))
         with clients_lock:
             clients.add(q)
         try:
@@ -361,6 +387,7 @@ def main():
     ap.add_argument("--tgc-host", default="127.0.0.1")
     ap.add_argument("--tgc-port", type=int, default=13854)
     ap.add_argument("--port", type=int, default=8000, help="web page port")
+    ap.add_argument("--lan", action="store_true", help="listen on the local network so another device can open /pilot")
     args = ap.parse_args()
 
     threading.Thread(target=raw_flusher, daemon=True).start()
@@ -373,10 +400,19 @@ def main():
     else:
         threading.Thread(target=tgc_reader, args=(args.tgc_host, args.tgc_port), daemon=True).start()
 
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), partial(Handler, directory=str(HERE)))
+    server = ThreadingHTTPServer(("0.0.0.0" if args.lan else "127.0.0.1", args.port), partial(Handler, directory=str(HERE)))
     print(f"[bridge] Open http://localhost:{args.port} in your browser   (Ctrl+C to quit)")
     print(f"[bridge] Lighthouse harbour: http://localhost:{args.port}/harbour")
     print(f"[bridge] Lighthouse Keepers game: http://localhost:{args.port}/game")
+    print(f"[bridge] Harbour Pilot (parent) page: http://localhost:{args.port}/pilot")
+    if args.lan:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect(("10.255.255.255", 1))
+                ip = s.getsockname()[0]
+            print(f"[bridge] On another device on this Wi-Fi: http://{ip}:{args.port}/pilot")
+        except OSError:
+            print("[bridge] Listening on the local network (couldn't detect this computer's address)")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
