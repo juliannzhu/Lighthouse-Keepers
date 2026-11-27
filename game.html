@@ -94,6 +94,8 @@ const CFG = {
   minBoats: 1, maxBoats: 3,              // boats on the water during a tide
   spawnEvery: [20, 32], noSpawnLastSec: 25, arriveSpeed: 12,
   passengers: { row: 2, sail: 4, fish: 6, storm: 20 },
+  // Each tide feels different: its own bay layout and boat mix.
+  boatMix: { 1: { row: 0.7, sail: 0.3 }, 2: { row: 0.3, sail: 0.5, fish: 0.2 }, 3: { row: 0.2, sail: 0.3, fish: 0.5 } },
   litMin: 0.22,                          // light a boat needs to move (same as the kit's "in light")
   dockStaySec: 4,
   fadeSec: 1.5, dawnFadeSec: 6,           // palette dissolve between stages; the storm-to-dawn one is slow
@@ -284,6 +286,12 @@ function makeNightRocks() {
 // rock (x,y) is its 8×4 sprite's centre
 function rockHits(r, cx, cy, hw, hh) { return Math.abs(cx - r.x) < 4 + hw - 2 && Math.abs(cy + hh * 0.3 - r.y) < 5; }
 
+function pickType() {
+  const mix = CFG.boatMix[S.tide] || CFG.boatMix[1];
+  let r = Math.random();
+  for (const [t, w] of Object.entries(mix)) if ((r -= w) < 0) return t;
+  return Object.keys(mix)[0];
+}
 function makeBoat(type, x, y) {
   const sz = LK.spriteSize(LK.SPRITES[type]);
   return { type, x, y, w: sz.w, h: sz.h, passengers: CFG.passengers[type], state: 'sea', left: true,
@@ -295,8 +303,7 @@ function spawnBoat() {
     const x = Math.round(rand(200, 224)), y = Math.round(rand(HZ + 12, 124));   // waiting spot near the right edge
     if (activeBoats().some(b => (distTo(b.x, b.y, x, y) < 18 || (b.x > x - 12 && Math.abs(b.y - y) < 12)))) continue;  // spot and lane are clear
     if (S.rocks.some(r => distTo(r.x, r.y, x, y) < 14)) continue;
-    const roll = Math.random(), type = roll < 0.5 ? 'row' : roll < 0.8 ? 'sail' : 'fish';
-    const b = makeBoat(type, x, y);
+    const b = makeBoat(pickType(), x, y);
     if (onLand(x, y, b.w, b.h)) continue;
     b.state = 'arriving'; b.waitX = x; b.x = W + b.w / 2 - 3;   // bow already peeking in at the edge
     S.boats.push(b);
