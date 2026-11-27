@@ -58,12 +58,13 @@
   .moreBtns { display: flex; flex-wrap: wrap; align-items: flex-start; max-width: 620px; }
   .moreBtns .lk-btn { font-size: 16px; line-height: 20px; padding: 2px 10px 6px; }
 
-  /* full-screen child screens: shop, decorate (drawn for a 960x540 stage) */
+  /* full-screen child screens: shop, decorate, logbook (drawn for a 960x540 stage) */
   #over { position: fixed; inset: 0; z-index: 10; background: var(--surface); display: flex; overflow: auto; }
   .sheet { margin: auto; flex: none; position: relative; width: 960px; height: 540px; display: flex; flex-direction: column; font-family: var(--font-pixel); color: var(--ink); }
   .sheet .bar { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) var(--space-4); }
   .sheet .bar h1 { margin: 0; flex: 1; }
   .sheet .bar .lk-btn { font-size: 18px; padding: 4px 14px 8px; }
+  .sheet .bar .sum { font-size: 18px; color: var(--ink-muted); }
   .purse { display: flex; align-items: center; gap: var(--space-2); font-size: 22px; padding: 4px 14px; }
   .purse small { font-size: 14px; color: var(--ink-muted); }
   .awning { height: 28px; width: 960px; display: block; image-rendering: pixelated; }
@@ -107,6 +108,20 @@
   .slotline { font-family: var(--font-read); font-size: 13px; color: var(--ink-muted); }
   .empty { font-family: var(--font-read); font-size: 16px; color: var(--ink-muted); }
 
+  .scroll { flex: 1; overflow-y: auto; padding: 0 var(--space-4) var(--space-4); }
+  .scroll h2 { font-size: 20px; line-height: 26px; margin: var(--space-2) 0; }
+  .lgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+  .bdg { display: grid; grid-template-columns: 60px 1fr; gap: var(--space-2); align-items: center; padding: var(--space-2); background: var(--surface-raised); border: 2px solid var(--border); }
+  .bdg.done { border-color: var(--success); }
+  .bdg canvas { image-rendering: pixelated; display: block; }
+  .bdg .n { font-size: 16px; line-height: 20px; }
+  .bdg .t { font-family: var(--font-read); font-size: 14px; line-height: 18px; color: var(--ink-muted); }
+  .segs { display: flex; gap: 2px; margin-top: 4px; }
+  .segs i { flex: 1; height: 6px; background: var(--border); }
+  .segs i.on { background: var(--success); }
+  .bdg .cnt { font-size: 14px; color: var(--ink-muted); }
+  .bdg.done .cnt { color: var(--success); }
+
 
 
   .pause { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; font-family: var(--font-pixel); }
@@ -126,6 +141,7 @@
       <div class="sleepNote" id="sleepNote">Opens at the next rest</div>
       <div class="moreBtns" id="moreBtns">
         <button class="lk-btn secondary" data-open="decorate">Decorate</button>
+        <button class="lk-btn secondary" data-open="logbook">Logbook</button>
       </div>
     </div>
   </div>
@@ -167,6 +183,8 @@ const CFG = {
   sunriseSec: 3.5, dawnSummaryAfter: 10, // sunrise easing (about 3x this to finish) and when the summary appears
   // sea stars (design-system/data/economy.json); never taken away
   stars: { perPassengers: 2, steady: 1, flare: 3, storm: 5 },
+  badgeStars: { bronze: 5, silver: 10, gold: 20 },
+  hiddenBadges: ['whaleWatcher', 'chartMaker', 'archSailor'],   // need things the game doesn't have yet
   seasonalAlways: true,                  // seasonal decorations are always in the shop
 };
 
@@ -218,9 +236,10 @@ const store = {
   set(k, v) { try { localStorage.setItem('lk.' + k, JSON.stringify(v)); } catch (e) {} },
 };
 
-// ---------- the family's progress: sea stars, bag, decorations ----------
+// ---------- the family's progress: sea stars, bag, decorations, logbook counters ----------
 const DEC = Object.fromEntries(LK.DATA.decorations.map(d => [d.id, d]));
 const SLOT = Object.fromEntries(LK.DATA.slots.map(s => [s.id, s]));
+const COUNTERS = { passengersHome: 0, boatsHome: 0, steadyBeams: 0, flares: 0, stormShipsHome: 0, nightsPlayed: 0, routesCompleted: 0, rocksRevealed: 0, ruinsLit: 0 };
 const PROG = (() => {
   let bag = store.get('bag', null), placed = store.get('placed', null);
   if (!bag) {   // first run, or a save from the old six-item shop: keep what was on the lighthouse
@@ -232,12 +251,37 @@ const PROG = (() => {
   bag = bag.filter(id => DEC[id]);
   for (const s in placed) if (!DEC[placed[s]] || !bag.includes(placed[s])) delete placed[s];
   placed.tower ??= 'paintClassic';
-  return { bag, placed, stars: store.get('stars', 0) };
+  return { bag, placed, stars: store.get('stars', 0), counters: { ...COUNTERS, ...store.get('counters', {}) },
+    placedEver: store.get('placedEver', Object.values(placed).filter(id => id !== 'paintClassic')), badges: store.get('badges', []) };
 })();
 function saveProg() {
-  store.set('bag', PROG.bag); store.set('placed', PROG.placed); store.set('stars', PROG.stars);
+  store.set('bag', PROG.bag); store.set('placed', PROG.placed); store.set('stars', PROG.stars); store.set('counters', PROG.counters);
+  store.set('placedEver', PROG.placedEver); store.set('badges', PROG.badges);
 }
 saveProg();
+
+// Keeper's Logbook: badges from design-system/data/badges.json, plus one for lighting the old keeper's ruins
+const BADGES = LK.DATA.badges.filter(b => !CFG.hiddenBadges.includes(b.id)).concat([
+  { id: 'oldLight', name: 'Old Light', group: 'Explorer', icon: 'ruin', goal: 1, tier: 'silver', text: "Light the old keeper's ruins with a steady beam." }]);
+const BADGE_HAVE = {
+  firstLight: c => c.steadyBeams, steadyHand: c => c.steadyBeams, lighthouseHeart: c => c.steadyBeams, flareMaker: c => c.flares,
+  firstRescue: c => c.boatsHome, harbourFull: c => c.passengersHome, thousand: c => c.passengersHome, stormChaser: c => c.stormShipsHome,
+  rockSpotter: c => c.rocksRevealed, oldLight: c => c.ruinsLit,
+  teamNight: c => c.nightsPlayed, tenNights: c => c.nightsPlayed, pilotPro: c => c.routesCompleted,
+  decorator: () => PROG.placedEver.length,
+  collector: () => PROG.bag.filter(id => DEC[id].price > 0).length,
+  friends: () => PROG.bag.filter(id => DEC[id].category === 'friends').length,
+};
+const badgeHave = b => (BADGE_HAVE[b.id] ? BADGE_HAVE[b.id](PROG.counters) : 0) || 0;
+// badges are only ever added; each one pays sea stars once
+function checkBadges() {
+  const got = [];
+  for (const b of BADGES) if (!PROG.badges.includes(b.id) && badgeHave(b) >= b.goal) {
+    PROG.badges.push(b.id); PROG.stars += CFG.badgeStars[b.tier] || 0; got.push(b);
+  }
+  if (got.length) saveProg();
+  return got;
+}
 
 // ---------- attention input: headset over the bridge, or the Space-bar simulator ----------
 const IN = { att: null, poor: null, last: 0, bridge: false, simAtt: 20, space: false, simFrost: false, simSig: 0 };
@@ -276,7 +320,7 @@ function newNight() {
     highContrast: store.get('highContrast', false), guide: { text: '', until: 0 }, nextSpawn: 0,
     channelOnce: false, summaryShown: false, snap: null, transT0: 0, transDur: 1.5, sun: 0, stormAmt: 0, lastNow: null,
     layout: 1, drizzle: 0, wind: 0, curAmt: 0, crestPos: 0, moonP: 0,
-    night: { steady: 0, flares: 0, storm: 0 },
+    night: { steady: 0, flares: 0, rocks: 0, routes: 0, storm: 0, ruins: false },
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
   makeNightRocks();
@@ -638,7 +682,7 @@ function dockBoat(b, quiet) {
   b.left = false;
   S.passengers += b.passengers; S.boatsHome++;
   if (S.tideStats) S.tideStats.boats++;
-  if (!quiet && S.stage !== 'dawn' && b.type === 'storm') S.night.storm++;
+  if (!quiet && S.stage !== 'dawn') { S.night.routes++; if (b.type === 'storm') S.night.storm++; }
   if (!quiet && S.stage !== 'dawn') say(b.type === 'storm' ? 'The storm ship is home! Every passenger is safe.' : 'A boat is home!', 4);
   autoSelect();
 }
@@ -676,7 +720,13 @@ function updateBoats(dt) {
 }
 function revealThings() {
   const showAll = S.beam.flare > 0.5, steady = S.beam.steady;
-  for (const r of S.rocks) if (!r.revealed && (showAll || (steady && lit(r.x, r.y) > 0.25))) r.revealed = true;
+  for (const r of S.rocks) if (!r.revealed && (showAll || (steady && lit(r.x, r.y) > 0.25))) { r.revealed = true; S.night.rocks++; }
+  // a steady beam (or a flare) on the old keeper's ruins earns the Old Light badge at dawn
+  const ruins = bayLayout().islands.find(i => i.id === 'ruins');
+  if (ruins && !S.night.ruins) {
+    const sh = isleShape('ruins'), x = ruins.x + sh.cx, y = ruins.y + sh.cy;
+    if (showAll || (steady && lit(x, y) > 0.25)) { S.night.ruins = true; say("You lit the old keeper's ruins! The first lighthouse stood there.", 5); }
+  }
   for (const b of S.boats) if (b.state === 'hidden' && (showAll || (steady && lit(b.x, b.y) > 0.5))) {   // the ferry needs the beam's bright core
     b.state = 'sea';
     say(`You found a ferry in the fog! ${b.passengers} passengers are aboard.`, 6);
@@ -1025,26 +1075,34 @@ function onPilotCmd(c) {
   publish(true);
 }
 
-// ---------- Dawn: team summary and sea stars ----------
+// ---------- Dawn: team summary, sea stars and new badges ----------
 function showDawn() {
   if (S.summaryShown) return;
   S.summaryShown = true;
   const n = S.passengers, last = store.get('lastNight', null), nt = S.night;
   store.set('lastNight', n);
+  // tonight's team results go into the family's counters (they only ever grow)
+  const c = PROG.counters;
+  c.passengersHome += n; c.boatsHome += S.boatsHome; c.steadyBeams += nt.steady; c.flares += nt.flares;
+  c.stormShipsHome += nt.storm; c.nightsPlayed++; c.routesCompleted += nt.routes; c.rocksRevealed += nt.rocks; if (nt.ruins) c.ruinsLit++;
   const earned = Math.floor(n / CFG.stars.perPassengers) + nt.steady * CFG.stars.steady + nt.flares * CFG.stars.flare + nt.storm * CFG.stars.storm;
   PROG.stars += earned;
   saveProg();
+  const got = checkBadges();
   const cmp = last == null ? `<p class="same">Your first night at the harbour.</p>` :
     n > last ? `<p class="up"><span aria-hidden="true">▲</span> ${n - last} more than last night</p>` :
     n === last ? `<p class="same">Just like last night.</p>` : `<p class="same">Every boat came home safely.</p>`;
+  const badgeLines = got.map(b => `<p class="news">New badge: ${escapeHTML(b.name)}! +${CFG.badgeStars[b.tier]} sea stars</p>`).join('');
   const d = $('dawn');
   d.innerHTML = `
     <h1 class="game-title">Dawn!</h1>
     <p class="big">Together you brought ${n} passenger${n === 1 ? '' : 's'} home.</p>
     ${cmp}
     <div class="stars"><span class="si"></span><span>+${earned} sea star${earned === 1 ? '' : 's'} tonight</span></div>
+    ${badgeLines}
     <div class="btns">
       <button class="lk-btn" data-open="shop">Shop</button><button class="lk-btn" data-open="decorate">Decorate</button>
+      <button class="lk-btn secondary" data-open="logbook">Logbook</button>
       <button class="lk-btn secondary" id="goodnight">Goodnight</button>
     </div>`;
   d.classList.remove('hidden');
@@ -1053,11 +1111,11 @@ function showDawn() {
   publish(true);
 }
 
-// ---------- the child's screens: shop and decorate ----------
+// ---------- the child's screens: shop, decorate, logbook ----------
 // They open only at rests and at Dawn: the Keeper has no input during a tide.
 const UI = { stack: [], cat: 'toppers', sel: 'flag', tab: 'all', slot: null };
 const screensAwake = () => S.stage === 'rest' || S.stage === 'end' || (S.stage === 'dawn' && S.summaryShown);
-const SCREEN_NAME = { shop: 'Sea Star Shop', decorate: 'Decorate' };
+const SCREEN_NAME = { shop: 'Sea Star Shop', decorate: 'Decorate', logbook: "Keeper's Logbook" };
 const blurButtons = () => { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); };
 function openScreen(kind) {
   if (!screensAwake() || UI.stack[UI.stack.length - 1] === kind) return;
@@ -1074,7 +1132,7 @@ function renderScreen() {
   const focus = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.k : null;
   const sheet = $('sheet');
   sheet.setAttribute('aria-label', SCREEN_NAME[k]);
-  ({ shop: renderShop, decorate: renderDecorate })[k](sheet);
+  ({ shop: renderShop, decorate: renderDecorate, logbook: renderLogbook })[k](sheet);
   starIcons(sheet, 3);
   // keep keyboard focus on the same control after a redraw
   const el = (focus && sheet.querySelector(`[data-k="${CSS.escape(focus)}"]`)) || sheet.querySelector('[data-k="close"]');
@@ -1121,6 +1179,7 @@ function purse() {
   p.append(el('span', 'si'), el('span', null, String(PROG.stars)), el('small', null, 'sea stars'));
   return p;
 }
+function badgeToasts(got) { if (got.length) setTimeout(() => toast(`New badge: ${got[0].name}! +${CFG.badgeStars[got[0].tier]} sea stars`), 1600); }
 
 // Sea Star Shop: a market stall that covers the whole screen
 const SEASON = (() => { const m = new Date().getMonth(); return m === 11 || m < 2 ? 'winter' : m < 5 ? 'spring' : m < 8 ? 'summer' : 'autumn'; })();
@@ -1178,7 +1237,8 @@ function renderShop(sheet) {
     const more = d.price - PROG.stars, b = btn('lk-btn secondary', `${more} more star${more === 1 ? '' : 's'} to go`, 'buy'); b.disabled = true; pv.appendChild(b);
   } else pv.appendChild(btn('lk-btn', d.price ? `Buy for ${d.price}` : 'Take it, it\'s free', 'buy', () => {
     PROG.stars -= d.price; PROG.bag.push(d.id); saveProg();
-    toast('Added to your bag!');
+    const got = checkBadges();
+    toast('Added to your bag!'); badgeToasts(got);
     renderScreen(); publish(true);
   }));
 }
@@ -1188,7 +1248,9 @@ function slotOf(id) { for (const s in PROG.placed) if (PROG.placed[s] === id) re
 function putOn(d) {
   const slot = spotFor(d, PROG.placed, UI.slot);
   PROG.placed[slot] = d.id;
+  if (d.id !== 'paintClassic' && !PROG.placedEver.includes(d.id)) PROG.placedEver.push(d.id);
   saveProg();
+  badgeToasts(checkBadges());
 }
 function takeOff(id) {
   const s = slotOf(id); if (!s) return;
@@ -1241,6 +1303,29 @@ function renderDecorate(sheet) {
     card.appendChild(b);
     if (at) card.appendChild(el('span', 'on-badge', 'ON'));
     grid.appendChild(card);
+  });
+}
+
+// Keeper's Logbook: badges that only ever fill up
+function renderLogbook(sheet) {
+  sheet.innerHTML = '';
+  const got = BADGES.filter(b => PROG.badges.includes(b.id)).length;
+  sheetBar(sheet, "Keeper's Logbook", [el('span', 'sum', `${got} of ${BADGES.length} badges`), btn('lk-btn secondary', 'Close ×', 'close', closeScreen)]);
+  const sc = el('div', 'scroll'); sheet.appendChild(sc);
+  [...new Set(BADGES.map(b => b.group))].forEach(g => {
+    sc.appendChild(el('h2', null, g));
+    const grid = el('div', 'lgrid'); sc.appendChild(grid);
+    BADGES.filter(b => b.group === g).forEach(b => {
+      const done = PROG.badges.includes(b.id), have = Math.min(badgeHave(b), b.goal);
+      const card = el('div', 'bdg' + (done ? ' done' : ''));
+      card.appendChild(LK.spriteCanvas(20, 20, 3, (c, p) => LK.badge(c, p, b, 1, 1, done)));
+      const info = el('div');
+      info.append(el('div', 'n', b.name), el('div', 't', b.text));
+      const segs = el('div', 'segs'), on = Math.round((done ? 1 : have / b.goal) * 8);
+      for (let i = 0; i < 8; i++) segs.appendChild(el('i', i < on ? 'on' : null));
+      info.append(segs, el('div', 'cnt', done ? `✓ ${b.tier} badge` : `${have} / ${b.goal}`));
+      card.appendChild(info); grid.appendChild(card);
+    });
   });
 }
 
