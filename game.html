@@ -22,7 +22,8 @@
   .scene canvas { display: block; }
   .hud { position: absolute; font-family: var(--font-pixel); }
   .hud.lk-panel { padding: var(--space-2) var(--space-4); }
-  .tl { top: var(--space-4); left: var(--space-4); }
+  .tl { top: var(--space-4); left: var(--space-4); display: flex; gap: var(--space-2); align-items: flex-start; }
+  .tl .tidebox { padding: var(--space-2) var(--space-4); }
   .tr { top: var(--space-4); right: var(--space-4); text-align: center; }
   .bl { bottom: var(--space-4); left: var(--space-4); display: flex; align-items: center; gap: var(--space-2); }
   .br { bottom: var(--space-4); right: var(--space-4); display: flex; align-items: flex-end; gap: var(--space-2); max-width: 380px; }
@@ -46,15 +47,45 @@
   .dawn .up { color: var(--success); font-size: 18px; line-height: 24px; display: flex; gap: var(--space-2); margin: 0 0 var(--space-2); }
   .dawn .same { font-size: 18px; line-height: 24px; margin: 0 0 var(--space-2); }
   .stars { display: flex; gap: var(--space-2); align-items: center; font-size: 20px; line-height: 26px; margin-bottom: var(--space-2); }
-  .shop { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin-top: var(--space-2); }
-  .item { text-align: center; padding: var(--space-1); margin: var(--space-1); cursor: pointer; font: inherit; color: var(--ink); border: 0; }
-  .item canvas { margin: 0 auto; display: block; }
-  .item div { font-size: 16px; line-height: 22px; }
-  .item small { font-size: 16px; line-height: 22px; color: var(--ink-muted); display: block; }
-  .item.picked { box-shadow: 0 -4px 0 0 var(--accent), 0 4px 0 0 var(--accent), -4px 0 0 0 var(--accent), 4px 0 0 0 var(--accent); }
-  .item.cant { cursor: default; opacity: .6; }
-  .item:focus-visible { outline: var(--space-1) solid var(--ink); outline-offset: var(--space-2); }
-  .btns { margin-top: var(--space-2); }
+  .dawn .news { font-size: 18px; line-height: 24px; margin: 0 0 var(--space-1); }
+  .btns { margin-top: var(--space-2); display: flex; flex-wrap: wrap; }
+
+  /* HUD Shop button: awake at rests and Dawn, asleep (dimmed) otherwise */
+  .shopBtn { display: flex; align-items: center; gap: var(--space-2); font-size: 20px; padding: 6px 14px 10px; }
+  .shopBtn .cnt { display: flex; align-items: center; gap: 4px; font-size: 16px; background: var(--surface); color: var(--ink); padding: 0 6px; }
+  .shopBtn.sleep { background: var(--surface-raised); color: var(--ink-muted); cursor: default; }
+  .sleepNote { font-size: 16px; color: var(--ink); background: var(--surface-raised); margin: 6px 4px 0; padding: 2px 8px; border: 2px solid var(--border); }
+
+  /* full-screen Sea Star Shop (drawn for a 960x540 stage) */
+  #over { position: fixed; inset: 0; z-index: 10; background: var(--surface); display: flex; overflow: auto; }
+  .sheet { margin: auto; flex: none; position: relative; width: 960px; height: 540px; display: flex; flex-direction: column; font-family: var(--font-pixel); color: var(--ink); }
+  .sheet .bar { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) var(--space-4); }
+  .sheet .bar h1 { margin: 0; flex: 1; }
+  .sheet .bar .lk-btn { font-size: 18px; padding: 4px 14px 8px; }
+  .purse { display: flex; align-items: center; gap: var(--space-2); font-size: 22px; padding: 4px 14px; }
+  .purse small { font-size: 14px; color: var(--ink-muted); }
+  .awning { height: 28px; width: 960px; display: block; image-rendering: pixelated; }
+  .shopMain { flex: 1; display: grid; grid-template-columns: 150px 1fr 250px; gap: var(--space-2); padding: 0 var(--space-4) var(--space-4); min-height: 0; }
+  .cats { display: flex; flex-direction: column; gap: 4px; }
+  .cat { display: flex; align-items: center; gap: 6px; font-family: var(--font-pixel); font-size: 17px; line-height: 20px; padding: 3px 6px; border: 2px solid var(--border); background: var(--surface-raised); color: var(--ink); cursor: pointer; text-align: left; }
+  .cat.on { background: var(--accent); color: var(--on-accent); border-color: var(--outline); }
+  .cat canvas { image-rendering: pixelated; }
+  .igrid { overflow-y: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); align-content: start; padding: 2px; }
+  .it { border: 2px solid var(--border); background: var(--surface-raised); padding: 6px; text-align: center; cursor: pointer; position: relative; color: var(--ink); font: inherit; }
+  .it.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .it canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+  .it .n { font-size: 16px; line-height: 18px; margin-top: 4px; }
+  .price { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 16px; }
+  .owned { color: var(--success); font-size: 14px; }
+  .short { opacity: .55; }
+  .tag { position: absolute; top: 3px; right: 3px; font-size: 11px; padding: 0 4px; background: var(--stripe); color: var(--tower); }
+  .preview { padding: var(--space-2); margin: var(--space-1); display: flex; flex-direction: column; gap: 6px; }
+  .preview canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+  .preview h2 { margin: 0; font-size: 22px; line-height: 26px; }
+  .preview p { margin: 0; font-family: var(--font-read); font-size: 14px; line-height: 19px; color: var(--ink-muted); }
+  .preview .lk-btn { margin-top: auto; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 6px 16px; font-size: 18px; font-family: var(--font-pixel); z-index: 11; }
+
 
 
   .pause { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; font-family: var(--font-pixel); }
@@ -67,7 +98,13 @@
 <div class="scene" id="scene">
   <canvas id="c" class="lk-pixel-canvas" aria-label="Pixel-art harbour at night: a lighthouse shines a beam through fog to guide boats home"></canvas>
 
-  <div class="hud tl lk-panel" id="hudTL"><div class="tide" id="stageName">Lamp lighting</div><div class="ticks" id="ticks"><i><b></b></i><i><b></b></i><i><b></b></i></div></div>
+  <div class="hud tl" id="hudTL">
+    <div class="lk-panel tidebox"><div class="tide" id="stageName">Lamp lighting</div><div class="ticks" id="ticks"><i><b></b></i><i><b></b></i><i><b></b></i></div></div>
+    <div>
+      <button class="lk-btn shopBtn" id="shopBtn" data-open="shop"><span id="awnIcon"></span>Shop <span class="cnt"><span class="si"></span><span id="starCnt">0</span></span></button>
+      <div class="sleepNote" id="sleepNote">Opens at the next rest</div>
+    </div>
+  </div>
   <div class="hud tr lk-panel" id="hudTR"><div class="small">Steady beams</div><div class="pips"><span class="pip"></span><span class="pip"></span><span class="pip"></span></div></div>
   <div class="hud bl lk-panel" id="hudBL"><span id="boatIcon"></span><span class="small" id="homeText">0 home</span></div>
   <div class="hud br" id="hudBR"><span id="guideAvatar"></span><div class="lk-panel bubble" id="bubble" aria-live="polite"></div></div>
@@ -76,6 +113,8 @@
   <div class="dawn lk-panel hidden" id="dawn"></div>
   <div class="pause lk-panel hidden" id="pause"><div class="game-heading">Paused</div><div class="small">Press Esc to carry on.</div></div>
 </div>
+<div id="over" class="hidden"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast lk-panel hidden" id="toast" role="status"></div>
 
 <script>
 'use strict';
@@ -102,9 +141,10 @@ const CFG = {
   dockStaySec: 4,
   fadeSec: 1.5, dawnFadeSec: 6,           // palette dissolve between stages; the storm-to-dawn one is slow
   sunriseSec: 3.5, dawnSummaryAfter: 10, // sunrise easing (about 3x this to finish) and when the summary appears
+  // sea stars (design-system/data/economy.json); never taken away
+  stars: { perPassengers: 2, steady: 1, flare: 3, storm: 5 },
+  seasonalAlways: true,                  // seasonal decorations are always in the shop
 };
-const SHOP = [['flag', 'Flag', 3], ['pot', 'Flowers', 4], ['bunting', 'Bunting', 5], ['lantern', 'Lantern', 6], ['crab', 'Crab friend', 4], ['gull', 'Gull', 2]];
-const DECO_AT = { flag: [0, -50], bunting: [-8, -37], pot: [-15, -7], lantern: [7, -6], crab: [14, -4], gull: [20, -42] };
 
 const $ = id => document.getElementById(id);
 const W = 240, H = 135, HZ = Math.round(H * 0.36);
@@ -154,6 +194,27 @@ const store = {
   set(k, v) { try { localStorage.setItem('lk.' + k, JSON.stringify(v)); } catch (e) {} },
 };
 
+// ---------- the family's progress: sea stars, bag, decorations ----------
+const DEC = Object.fromEntries(LK.DATA.decorations.map(d => [d.id, d]));
+const SLOT = Object.fromEntries(LK.DATA.slots.map(s => [s.id, s]));
+const PROG = (() => {
+  let bag = store.get('bag', null), placed = store.get('placed', null);
+  if (!bag) {   // first run, or a save from the old six-item shop: keep what was on the lighthouse
+    const OLD = { flag: ['flag', 'topper'], bunting: ['bunting', 'gallery'], pot: ['pot', 'gardenL'], lantern: ['doorLantern', 'door'], crab: ['crab', 'pet'], gull: ['gulls', 'sky'] };
+    bag = LK.DATA.decorations.filter(d => d.owned).map(d => d.id); placed = { tower: 'paintClassic' };
+    store.get('owned', []).forEach(k => { const m = OLD[k]; if (m) { bag.push(m[0]); placed[m[1]] = m[0]; } });
+    try { localStorage.removeItem('lk.owned'); } catch (e) {}
+  }
+  bag = bag.filter(id => DEC[id]);
+  for (const s in placed) if (!DEC[placed[s]] || !bag.includes(placed[s])) delete placed[s];
+  placed.tower ??= 'paintClassic';
+  return { bag, placed, stars: store.get('stars', 0) };
+})();
+function saveProg() {
+  store.set('bag', PROG.bag); store.set('placed', PROG.placed); store.set('stars', PROG.stars);
+}
+saveProg();
+
 // ---------- attention input: headset over the bridge, or the Space-bar simulator ----------
 const IN = { att: null, poor: null, last: 0, bridge: false, simAtt: 20, space: false, simFrost: false, simSig: 0 };
 if (location.protocol.startsWith('http')) {
@@ -189,12 +250,14 @@ function newNight() {
     beam: { level: 0, aim: DEFAULT_AIM, aboveSince: null, steady: false, count: 0, flareUntil: 0, flare: 0, lowSince: 0, eff: 0, dawnMix: 0 },
     dens: 0.72, hist: [], histT: 0, tideStats: null, pending: { threshold: CFG.threshold, holdSec: CFG.holdSec },
     highContrast: store.get('highContrast', false), guide: { text: '', until: 0 }, nextSpawn: 0,
-    channelOnce: false, summaryShown: false, dawnPick: null, snap: null, transT0: 0, transDur: 1.5, sun: 0, stormAmt: 0, lastNow: null,
+    channelOnce: false, summaryShown: false, snap: null, transT0: 0, transDur: 1.5, sun: 0, stormAmt: 0, lastNow: null,
     layout: 1, drizzle: 0, wind: 0, curAmt: 0, crestPos: 0, moonP: 0,
+    night: { steady: 0, flares: 0, storm: 0 },
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
   makeNightRocks();
   $('dawn').classList.add('hidden');
+  closeOverlays();
   setStage('lighting');
 }
 
@@ -465,9 +528,9 @@ function updateBeam(r, dt) {
   else {
     B.aboveSince ??= T;
     if (!B.steady && T - B.aboveSince >= CFG.holdSec) {
-      B.steady = true;
+      B.steady = true; S.night.steady++;
       if (S.tideStats) S.tideStats.steady++;
-      if (!flaring && ++B.count >= CFG.steadyForFlare) { B.flareUntil = T + CFG.flareSec; say('A flare! The whole bay is lit.', 5); }
+      if (!flaring && ++B.count >= CFG.steadyForFlare) { B.flareUntil = T + CFG.flareSec; S.night.flares++; say('A flare! The whole bay is lit.', 5); }
       else if (!flaring) say(S.stage === 'calm' ? 'A steady beam! See the sparkles?' : 'Steady beam! Hidden rocks are showing.', 4);
     }
   }
@@ -551,6 +614,7 @@ function dockBoat(b, quiet) {
   b.left = false;
   S.passengers += b.passengers; S.boatsHome++;
   if (S.tideStats) S.tideStats.boats++;
+  if (!quiet && S.stage !== 'dawn' && b.type === 'storm') S.night.storm++;
   if (!quiet && S.stage !== 'dawn') say(b.type === 'storm' ? 'The storm ship is home! Every passenger is safe.' : 'A boat is home!', 4);
   autoSelect();
 }
@@ -748,8 +812,7 @@ function renderSprites() {
   drawBay(p);
   const lampLit = S.stage === 'lighting' ? 0.6 * (S.reading ? S.reading.q : 0) : S.beam.eff;
   LK.lighthouse(ctx, p, BX, BY, CFG.lighthouse, lampLit, frosty());
-  // decorations the Keeper chose on past nights
-  store.get('owned', []).forEach(k => { const at = DECO_AT[k]; if (at) LK.drawSprite(ctx, LK.SPRITES[k], BX + at[0], BY + at[1], p); });
+  drawDecorations(p);
 
   // rocks stay on the chart once a steady beam has found them
   for (const r of S.rocks) {
@@ -800,6 +863,14 @@ function renderSprites() {
   }
 }
 
+// the lighthouse the Keeper decorated (the kit's slots fit the classic tower)
+function drawDecorations(p) {
+  if (CFG.lighthouse !== 'classic') return;
+  const paint = DEC[PROG.placed.tower];
+  if (paint && paint.id !== 'paintClassic') LK.paintTower(ctx, p, BX, BY, paint.paint, paint.color);
+  for (const s of LK.DATA.slots) if (PROG.placed[s.id]) LK.placeItem(ctx, p, s.id, PROG.placed[s.id], BX, BY);
+}
+
 // palette changes between stages dissolve through the Bayer pattern (no flash)
 function dissolve() {
   if (!S.snap) return;
@@ -830,6 +901,13 @@ function drawIcons() {
   const g = $('guideAvatar'); g.innerHTML = '';
   g.appendChild(LK.spriteCanvas(14, 21, 4, (c, p) => LK.avatar(c, 1, 1, p, {})));
   $('bubble')._h = null;
+  starIcons($('shopBtn'), 3);
+  const ai = $('awnIcon'); ai.innerHTML = '';
+  ai.appendChild(LK.spriteCanvas(9, 8, 3, (c, p) => {   // a little market-stall awning
+    for (let x = 0; x < 9; x++) LK.px(c, x % 2 ? p.tower : p.stripe, x, 0, 1, 3);
+    LK.px(c, p.outline, 0, 3, 9, 1); LK.px(c, p.hull, 1, 4, 1, 4); LK.px(c, p.hull, 7, 4, 1, 4); LK.px(c, p.hull, 1, 7, 7, 1);
+  }));
+  if (S && S.summaryShown) starIcons($('dawn'), 4);
 }
 function frostIcon() {
   const cv = LK.spriteCanvas(10, 9, 3, (c, p) => {
@@ -868,6 +946,12 @@ function updateHUD() {
   if (g) setHTML($('bubble'), g.frost ? `<span class="frost" id="frostWrap"></span>` : escapeHTML(g.text));
   if (g && g.frost && !$('frostWrap').childElementCount) { $('frostWrap').appendChild(frostIcon()); $('frostWrap').append(g.text); }
   $('pause').classList.toggle('hidden', !S.paused);
+  // the Shop button is always shown; it sleeps (dimmed, does nothing) until a rest or Dawn
+  const awake = screensAwake(), sb = $('shopBtn');
+  sb.classList.toggle('sleep', !awake); sb.disabled = !awake;
+  setText($('starCnt'), String(PROG.stars));
+  $('sleepNote').classList.toggle('hidden', awake);
+  setText($('sleepNote'), st === 'storm' || st === 'dawn' || (st === 'tide' && S.tide >= CFG.tides) ? 'Opens at dawn' : 'Opens at the next rest');
   const hint = st === 'lighting' ? `Grown-ups: open ${location.host || 'the bridge'}/pilot, or press Enter to start.`
     : st === 'end' ? 'Grown-ups: press Enter for a new night.' : '';
   $('hudHint').classList.toggle('hidden', !hint);
@@ -887,6 +971,7 @@ function pilotState() {
     attention: r.att ?? null, poor: r.poor ?? null, headset: headsetLive(), bridgeOn: IN.bridge, simFrost: IN.simFrost,
     threshold: CFG.threshold, holdSec: CFG.holdSec, pending: S.pending, highContrast: S.highContrast,
     tideStats: S.tideStats, summaryShown: S.summaryShown, layout: S.layout, current: currentOn(),
+    screen: UI.stack[UI.stack.length - 1] || null, seaStars: PROG.stars,
     ferry: !ferry ? (S.tide >= CFG.ferryTide ? 'home' : 'none') : ferry.state === 'hidden' ? 'hidden' : ferry.state === 'docked' ? 'home' : 'found',
     marked: b ? { type: b.type, status: b.status, passengers: b.passengers } : null,
   };
@@ -900,7 +985,7 @@ function publish(force) {
 }
 function onPilotCmd(c) {
   if (!S || !c) return;
-  if (c.cmd === 'next') { S.paused = false; nextStage(); }
+  if (c.cmd === 'next') { S.paused = false; closeOverlays(); nextStage(); }
   else if (c.cmd === 'pause') { if (['calm', 'tide', 'storm'].includes(S.stage)) S.paused = !S.paused; }
   else if (c.cmd === 'frost') IN.simFrost = !IN.simFrost;
   else if (c.cmd === 'settings') {
@@ -915,13 +1000,15 @@ function onPilotCmd(c) {
   publish(true);
 }
 
-// ---------- Dawn: team summary + decorations ----------
+// ---------- Dawn: team summary and sea stars ----------
 function showDawn() {
   if (S.summaryShown) return;
   S.summaryShown = true;
-  const n = S.passengers, last = store.get('lastNight', null), earned = Math.floor(n / 2);
+  const n = S.passengers, last = store.get('lastNight', null), nt = S.night;
   store.set('lastNight', n);
-  store.set('stars', store.get('stars', 0) + earned);
+  const earned = Math.floor(n / CFG.stars.perPassengers) + nt.steady * CFG.stars.steady + nt.flares * CFG.stars.flare + nt.storm * CFG.stars.storm;
+  PROG.stars += earned;
+  saveProg();
   const cmp = last == null ? `<p class="same">Your first night at the harbour.</p>` :
     n > last ? `<p class="up"><span aria-hidden="true">▲</span> ${n - last} more than last night</p>` :
     n === last ? `<p class="same">Just like last night.</p>` : `<p class="same">Every boat came home safely.</p>`;
@@ -930,46 +1017,154 @@ function showDawn() {
     <h1 class="game-title">Dawn!</h1>
     <p class="big">Together you brought ${n} passenger${n === 1 ? '' : 's'} home.</p>
     ${cmp}
-    <div class="stars"><span id="starIcon"></span><span id="starText"></span></div>
-    <div class="small">Pick a decoration for the lighthouse, then press Decorate.</div>
-    <div class="shop" id="shop"></div>
-    <div class="btns"><button class="lk-btn" id="decorate">Decorate</button><button class="lk-btn secondary" id="goodnight">Goodnight</button></div>`;
+    <div class="stars"><span class="si"></span><span>+${earned} sea star${earned === 1 ? '' : 's'} tonight</span></div>
+    <div class="btns">
+      <button class="lk-btn" data-open="shop">Shop</button>
+      <button class="lk-btn secondary" id="goodnight">Goodnight</button>
+    </div>`;
   d.classList.remove('hidden');
-  $('starIcon').appendChild(LK.spriteCanvas(7, 5, 4, (c, p) => LK.drawSprite(c, LK.SPRITES.star, 0, 0, p)));
-  $('decorate').onclick = () => {
-    const pick = SHOP.find(s => s[0] === S.dawnPick), stars = store.get('stars', 0), owned = store.get('owned', []);
-    if (!pick || owned.includes(pick[0]) || stars < pick[2]) return;
-    store.set('stars', stars - pick[2]); store.set('owned', [...owned, pick[0]]); S.dawnPick = null;
-    say(`The ${pick[1].toLowerCase()} looks lovely on the lighthouse.`, 5);
-    renderShop();
-  };
-  $('goodnight').onclick = () => { d.classList.add('hidden'); setStage('end'); };
-  renderShop();
+  starIcons(d, 4);
+  $('goodnight').onclick = () => { d.classList.add('hidden'); blurButtons(); setStage('end'); };
   publish(true);
-  $('decorate').focus({ preventScroll: true });
 }
-function renderShop() {
-  const stars = store.get('stars', 0), owned = store.get('owned', []);
-  setText($('starText'), `${stars} sea star${stars === 1 ? '' : 's'} to spend`);
-  const shop = $('shop'); shop.innerHTML = '';
-  SHOP.forEach(([key, name, cost]) => {
-    const have = owned.includes(key), can = !have && stars >= cost;
-    const el = document.createElement('button');
-    el.className = 'item lk-panel' + (S.dawnPick === key ? ' picked' : '') + (can || have ? '' : ' cant');
-    const spr = LK.SPRITES[key], sz = LK.spriteSize(spr);
-    el.appendChild(LK.spriteCanvas(18, 10, 3, (c, p) => LK.drawSprite(c, spr, Math.floor((18 - sz.w) / 2), Math.floor((10 - sz.h) / 2), p)));
-    const nm = document.createElement('div'); nm.textContent = name;
-    const sm = document.createElement('small'); sm.textContent = have ? 'On the lighthouse' : `${cost} stars`;
-    el.append(nm, sm);
-    el.onclick = () => { if (can) { S.dawnPick = key; renderShop(); } };
-    shop.appendChild(el);
+
+// ---------- the Sea Star Shop ----------
+// They open only at rests and at Dawn: the Keeper has no input during a tide.
+const UI = { stack: [], cat: 'toppers', sel: 'flag' };
+const screensAwake = () => S.stage === 'rest' || S.stage === 'end' || (S.stage === 'dawn' && S.summaryShown);
+const SCREEN_NAME = { shop: 'Sea Star Shop' };
+const blurButtons = () => { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); };
+function openScreen(kind) {
+  if (!screensAwake() || UI.stack[UI.stack.length - 1] === kind) return;
+  UI.stack = UI.stack.filter(k => k !== kind); UI.stack.push(kind);
+  renderScreen(); publish(true);
+}
+function closeScreen() { UI.stack.pop(); renderScreen(); publish(true); }
+function closeOverlays() { if (!UI.stack.length) return; UI.stack = []; renderScreen(); }
+function renderScreen() {
+  const k = UI.stack[UI.stack.length - 1];
+  $('over').classList.toggle('hidden', !k);
+  if (!k) { blurButtons(); return; }
+  const focus = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.k : null;
+  const sheet = $('sheet');
+  sheet.setAttribute('aria-label', SCREEN_NAME[k]);
+  ({ shop: renderShop })[k](sheet);
+  starIcons(sheet, 3);
+  // keep keyboard focus on the same control after a redraw
+  const el = (focus && sheet.querySelector(`[data-k="${CSS.escape(focus)}"]`)) || sheet.querySelector('[data-k="close"]');
+  if (el) el.focus({ preventScroll: true });
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-open]');
+  if (b && !b.disabled) openScreen(b.dataset.open);
+});
+function starIcons(root, scale) {
+  root.querySelectorAll('.si').forEach(el => { el.innerHTML = ''; el.appendChild(LK.spriteCanvas(7, 5, scale, (c, p) => LK.drawSprite(c, LK.SPRITES.star, 0, 0, p))); });
+}
+function toast(text) {
+  const t = $('toast'); t.textContent = text; t.classList.remove('hidden');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 1500);
+}
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function btn(cls, text, key, onClick) { const b = el('button', cls, text); b.dataset.k = key; if (onClick) b.onclick = onClick; return b; }
+const slotName = d => d.slots.length > 1 ? 'the garden' : SLOT[d.slots[0]].name.toLowerCase();
+// which spot an item is tried on in: an empty garden side first
+function spotFor(d, placed) {
+  return d.slots.find(s => !placed[s]) || d.slots[d.slots.length - 1];
+}
+function sceneCanvas(placed, opt) {
+  const cv = document.createElement('canvas'); cv.width = 84; cv.height = 72;
+  const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+  LK.decoratedScene(c, LK.pal(), placed, opt || {});
+  return cv;
+}
+function tile(id, bg) {
+  const cv = LK.spriteCanvas(20, 16, 1, (c, p) => LK.itemTile(c, p, id, 20, 16), bg);
+  cv.style.width = '100%'; cv.style.height = 'auto';
+  return cv;
+}
+function sheetBar(sheet, title, extra) {
+  const bar = el('div', 'bar');
+  bar.appendChild(el('h1', 'game-heading', title));
+  extra.forEach(x => bar.appendChild(x));
+  sheet.appendChild(bar);
+}
+function purse() {
+  const p = el('div', 'purse lk-panel');
+  p.append(el('span', 'si'), el('span', null, String(PROG.stars)), el('small', null, 'sea stars'));
+  return p;
+}
+
+// Sea Star Shop: a market stall that covers the whole screen
+const SEASON = (() => { const m = new Date().getMonth(); return m === 11 || m < 2 ? 'winter' : m < 5 ? 'spring' : m < 8 ? 'summer' : 'autumn'; })();
+const inShop = d => CFG.seasonalAlways || !d.season || d.season === SEASON;
+const CAT_ICON = { toppers: 'flag', lights: 'lanternRow', paint: null, garden: 'pot', friends: 'puffin', dock: 'anchor', sky: 'kite', seasonal: 'pumpkin' };
+function renderShop(sheet) {
+  sheet.innerHTML = '';
+  const aw = document.createElement('canvas'); aw.width = 240; aw.height = 7; aw.className = 'awning';
+  const ac = aw.getContext('2d');
+  for (let x = 0; x < 240; x++) {
+    const stripe = Math.floor(x / 8) % 2 === 0, scallop = 5 + (Math.abs((x % 8) - 3.5) < 2.5 ? 1 : 0);
+    for (let y = 0; y <= scallop; y++) LK.px(ac, y === scallop ? P.outline : (stripe ? P.stripe : P.tower), x, y);
+  }
+  sheet.appendChild(aw);
+  sheetBar(sheet, 'Sea Star Shop', [purse(), btn('lk-btn secondary', 'Close ×', 'close', closeScreen)]);
+  const main = el('div', 'shopMain'), cats = el('div', 'cats'), grid = el('div', 'igrid'), pv = el('div', 'preview lk-panel');
+  main.append(cats, grid, pv); sheet.appendChild(main);
+  const items = LK.DATA.decorations.filter(d => d.category === UI.cat && inShop(d));
+  if (!items.some(d => d.id === UI.sel)) UI.sel = items[0] && items[0].id;
+
+  LK.DATA.categories.forEach(c => {
+    if (!LK.DATA.decorations.some(d => d.category === c.id && inShop(d))) return;
+    const b = btn('cat' + (c.id === UI.cat ? ' on' : ''), null, 'cat-' + c.id, () => { UI.cat = c.id; UI.sel = null; renderScreen(); });
+    b.setAttribute('aria-pressed', c.id === UI.cat);
+    b.appendChild(LK.spriteCanvas(14, 12, 2, (ctx2, p) => {
+      if (CAT_ICON[c.id]) { const s = LK.SPRITES[CAT_ICON[c.id]], z = LK.spriteSize(s); LK.drawSprite(ctx2, s, Math.floor((14 - z.w) / 2), Math.floor((12 - z.h) / 2), p); }
+      else LK.itemTile(ctx2, p, 'paintSpiral', 14, 12);
+    }));
+    b.append(c.name);
+    cats.appendChild(b);
   });
+
+  items.forEach(d => {
+    const have = PROG.bag.includes(d.id), short = !have && d.price > PROG.stars;
+    const b = btn('it' + (d.id === UI.sel ? ' sel' : '') + (short ? ' short' : ''), null, 'item-' + d.id, () => { UI.sel = d.id; renderScreen(); });
+    b.setAttribute('aria-pressed', d.id === UI.sel);
+    b.appendChild(tile(d.id, 'surface'));
+    b.appendChild(el('div', 'n', d.name));
+    if (have) b.appendChild(el('div', 'owned', '✓ In your bag'));
+    else { const pr = el('div', 'price'); pr.append(el('span', 'si'), d.price ? String(d.price) : 'Free'); b.appendChild(pr); }
+    if (d.tag || d.season) b.appendChild(el('span', 'tag', (d.season || d.tag).toUpperCase()));
+    grid.appendChild(b);
+  });
+
+  const d = DEC[UI.sel];
+  if (!d) return;
+  // the child's own lighthouse with the item tried on
+  const trial = { ...PROG.placed }; trial[spotFor(d, PROG.placed)] = d.id;
+  pv.appendChild(sceneCanvas(trial));
+  pv.appendChild(el('h2', null, d.name));
+  pv.appendChild(el('p', null, `${d.blurb} Goes on: ${slotName(d)}.`));
+  const have = PROG.bag.includes(d.id);
+  if (have) { const b = btn('lk-btn secondary', 'In your bag', 'buy'); b.disabled = true; pv.appendChild(b); }
+  else if (d.price > PROG.stars) {
+    const more = d.price - PROG.stars, b = btn('lk-btn secondary', `${more} more star${more === 1 ? '' : 's'} to go`, 'buy'); b.disabled = true; pv.appendChild(b);
+  } else pv.appendChild(btn('lk-btn', d.price ? `Buy for ${d.price}` : 'Take it, it\'s free', 'buy', () => {
+    PROG.stars -= d.price; PROG.bag.push(d.id); saveProg();
+    toast('Added to your bag!');
+    renderScreen(); publish(true);
+  }));
 }
 
 // ---------- keys ----------
 const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 addEventListener('keydown', e => {
   const tag = e.target.tagName, inInput = tag === 'INPUT';
+  if (UI.stack.length) {   // a child screen is open: keys work its buttons; Esc closes it
+    if (e.key === 'Escape') { closeScreen(); e.preventDefault(); }
+    else if ((e.key === 'n' || e.key === 'N') && S.stage !== 'end') { closeOverlays(); nextStage(); }
+    return;
+  }
   if (ARROWS.includes(e.key)) { if (inInput) return; K[e.key] = true; e.preventDefault(); return; }
   if (e.key === ' ') { if (inInput) return; IN.space = true; e.preventDefault(); return; }
   if (e.key === 'Tab' && (S.stage === 'tide' || S.stage === 'storm')) { selectNext(e.shiftKey ? -1 : 1); e.preventDefault(); return; }
@@ -992,7 +1187,7 @@ function fit() {
   cv.style.width = W * s + 'px'; cv.style.height = H * s + 'px';
   // the HUD is drawn for 4x; it grows with the scene on big screens and never drops below 16px text
   const z = String(Math.max(1, s / 4));
-  document.querySelectorAll('.hud, .dawn, .pause').forEach(el => { el.style.zoom = z; });
+  document.querySelectorAll('.hud, .dawn, .pause, .sheet, .toast').forEach(el => { el.style.zoom = z; });
 }
 addEventListener('resize', fit);
 
