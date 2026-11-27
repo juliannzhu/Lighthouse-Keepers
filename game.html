@@ -48,7 +48,9 @@
   .dawn .same { font-size: 18px; line-height: 24px; margin: 0 0 var(--space-2); }
   .stars { display: flex; gap: var(--space-2); align-items: center; font-size: 20px; line-height: 26px; margin-bottom: var(--space-2); }
   .dawn .news { font-size: 18px; line-height: 24px; margin: 0 0 var(--space-1); }
-  .btns { margin-top: var(--space-2); display: flex; flex-wrap: wrap; }
+  .dawnBtns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-top: var(--space-4); }
+  .dawnBtns .lk-btn { display: flex; align-items: center; gap: var(--space-2); font-size: 18px; text-align: left; }
+  .dawn .goodnight { display: block; width: calc(100% - 2 * var(--space-1)); margin-top: var(--space-4); }
 
   /* top-right menu: Shop + icon buttons, all one height */
   .trc { top: var(--space-4); right: var(--space-4); display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); }
@@ -1009,7 +1011,7 @@ function drawIcons() {
   g.appendChild(LK.spriteCanvas(14, 21, 4, (c, p) => LK.avatar(c, 1, 1, p, {})));
   $('bubble')._h = null;
   starIcons($('shopBtn'), 3); menuIcons($('menu'), 3);
-  if (S && S.summaryShown) starIcons($('dawn'), 4);
+  if (S && S.summaryShown) { starIcons($('dawn'), 4); menuIcons($('dawn'), 3); }
 }
 // pixel icons for the menu buttons, in the kit's colour roles (see LK.SPRITES)
 const MENU_ICONS = {
@@ -1140,13 +1142,15 @@ function showDawn() {
     ${cmp}
     <div class="stars"><span class="si"></span><span>+${earned} sea star${earned === 1 ? '' : 's'} tonight</span></div>
     ${badgeLines}${friends}
-    <div class="btns">
-      <button class="lk-btn" data-open="shop">Shop</button><button class="lk-btn" data-open="decorate">Decorate</button>
-      <button class="lk-btn secondary" data-open="logbook">Logbook</button><button class="lk-btn secondary" data-open="album">Rescue album</button>
-      <button class="lk-btn secondary" id="goodnight">Goodnight</button>
-    </div>`;
+    <div class="dawnBtns">
+      <button class="lk-btn" data-open="shop"><span data-icon="shop"></span>Shop</button>
+      <button class="lk-btn" data-open="decorate"><span data-icon="decorate"></span>Decorate</button>
+      <button class="lk-btn secondary" data-open="logbook"><span data-icon="logbook"></span>Logbook</button>
+      <button class="lk-btn secondary" data-open="album"><span data-icon="album"></span>Rescue album</button>
+    </div>
+    <button class="lk-btn secondary goodnight" id="goodnight">Goodnight</button>`;
   d.classList.remove('hidden');
-  starIcons(d, 4);
+  starIcons(d, 4); menuIcons(d, 3);
   $('goodnight').onclick = () => { d.classList.add('hidden'); blurButtons(); setStage('end'); };
   publish(true);
 }
@@ -1191,7 +1195,6 @@ function toast(text) {
 }
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function btn(cls, text, key, onClick) { const b = el('button', cls, text); b.dataset.k = key; if (onClick) b.onclick = onClick; return b; }
-const slotName = d => d.slots.length > 1 ? 'the garden' : SLOT[d.slots[0]].name.toLowerCase();
 // which spot a new item would go in: an empty garden side first
 function spotFor(d, placed, want) {
   if (want && d.slots.includes(want)) return want;
@@ -1289,7 +1292,7 @@ function renderShop(sheet) {
   const trial = { ...PROG.placed }; trial[spotFor(d, PROG.placed)] = d.id;
   pv.appendChild(sceneCanvas(trial));
   pv.appendChild(el('h2', null, d.name));
-  pv.appendChild(el('p', null, `${d.blurb} Goes on: ${slotName(d)}.`));
+  pv.appendChild(el('p', null, d.blurb));
   const have = PROG.bag.includes(d.id);
   if (have) { const b = btn('lk-btn secondary', 'In your bag', 'buy'); b.disabled = true; pv.appendChild(b); }
   else if (d.price > PROG.stars) {
@@ -1338,7 +1341,7 @@ function renderDecorate(sheet) {
   body.appendChild(left);
 
   const bag = el('div', 'bag lk-panel'); body.appendChild(bag);
-  const h = el('h2', null, 'Your bag '); h.appendChild(el('small', null, `${PROG.bag.length} things · ${Object.keys(PROG.placed).length} on`)); bag.appendChild(h);
+  const h = el('h2', null, 'Your bag '); h.appendChild(el('small', null, `${PROG.bag.length} thing${PROG.bag.length === 1 ? '' : 's'} · ${Object.keys(PROG.placed).length} on`)); bag.appendChild(h);
   const tabs = el('div', 'tabs'); bag.appendChild(tabs);
   [{ id: 'all', name: 'All' }].concat(LK.DATA.categories).forEach(c => {
     if (c.id !== 'all' && !PROG.bag.some(id => DEC[id].category === c.id)) return;
@@ -1356,7 +1359,7 @@ function renderDecorate(sheet) {
     card.appendChild(tile(id));
     card.appendChild(el('div', 'n', d.name));
     const target = spotFor(d, PROG.placed, UI.slot), taken = !at && PROG.placed[target];
-    card.appendChild(el('div', 'slotline', at ? `On: ${SLOT[at].name}` : taken ? `Swaps with ${DEC[PROG.placed[target]].name}` : `Goes on: ${d.slots.length > 1 ? 'Garden' : SLOT[d.slots[0]].name}`));
+    card.appendChild(el('div', 'slotline', at ? `On: ${SLOT[at].name}` : taken ? `Swaps with ${DEC[PROG.placed[target]].name}` : ''));
     const fixed = id === 'paintClassic' && at;   // the tower always has a paint
     const b = btn(null, at ? (fixed ? 'On' : 'Take off') : taken ? 'Swap in' : 'Put on', 'dec-' + id, () => { at ? takeOff(id) : putOn(d); renderScreen(); });
     b.disabled = !!fixed;
