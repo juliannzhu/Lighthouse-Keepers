@@ -94,7 +94,7 @@ const CFG = {
   minBoats: 1, maxBoats: 3,              // boats on the water during a tide
   spawnEvery: [20, 32], noSpawnLastSec: 25, arriveSpeed: 12,
   passengers: { row: 2, sail: 4, fish: 6, ferry: 10, storm: 20 },
-  // Each tide feels different: its own bay layout, boat mix, and (tide 3) a current and a hidden ferry.
+  // Each tide feels different: its own bay layout, boat mix, weather, and (tide 3) a current and a hidden ferry.
   boatMix: { 1: { row: 0.7, sail: 0.3 }, 2: { row: 0.3, sail: 0.5, fish: 0.2 }, 3: { row: 0.2, sail: 0.3, fish: 0.5 } },
   currentTide: 3, current: { vx: 0, vy: 2.5 },   // art pixels per second; only lit boats drift
   ferryTide: 3,
@@ -190,7 +190,7 @@ function newNight() {
     dens: 0.72, hist: [], histT: 0, tideStats: null, pending: { threshold: CFG.threshold, holdSec: CFG.holdSec },
     highContrast: store.get('highContrast', false), guide: { text: '', until: 0 }, nextSpawn: 0,
     channelOnce: false, summaryShown: false, dawnPick: null, snap: null, transT0: 0, transDur: 1.5, sun: 0, stormAmt: 0, lastNow: null,
-    layout: 1, curAmt: 0,
+    layout: 1, drizzle: 0, wind: 0, curAmt: 0, crestPos: 0, moonP: 0,
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
   makeNightRocks();
@@ -643,9 +643,13 @@ let img = null;
 
 function look() {
   const st = S.stage, phase = st === 'rest' ? 'tide' : st === 'end' ? 'dawn' : st;
-  return { phase, dawn: phase === 'dawn', storm: phase === 'storm',
+  const tideNo = phase === 'tide' ? S.tide : 0;
+  // the moon crosses the sky over the three tides; weather builds toward the storm
+  const moon = st === 'lighting' || st === 'calm' ? 0 : phase === 'tide' ? (S.tide - 1 + (st === 'rest' ? 1 : Math.min(1, S.stageT / CFG.durations.tide))) / CFG.tides : 1;
+  return { phase, dawn: phase === 'dawn', storm: phase === 'storm', moon,
+    clear: tideNo === 1, drizzle: tideNo === 2, wind: tideNo === 3,
     dens: 0.72 * ({ lighting: 1, calm: 0.55, tide: 1, storm: 1.3, dawn: 0.22 }[phase] || 1),
-    starTh: phase === 'calm' || phase === 'dawn' ? 0.982 : 0.99 };
+    starTh: phase === 'calm' || phase === 'dawn' ? 0.982 : tideNo === 1 ? 0.984 : 0.99 };
 }
 
 function renderBackground(now) {
@@ -655,14 +659,19 @@ function renderBackground(now) {
   S.dens += (L0.dens - S.dens) * ease(dt, L0.dawn ? CFG.sunriseSec : 1);
   S.stormAmt += ((L0.storm ? 1 : 0) - S.stormAmt) * ease(dt, L0.storm ? 1.5 : CFG.sunriseSec * 0.8);
   S.sun += ((L0.dawn ? 1 : 0) - S.sun) * ease(dt, CFG.sunriseSec);
+  S.drizzle += ((L0.drizzle ? 1 : 0) - S.drizzle) * ease(dt, 3);
+  S.wind += ((L0.wind ? 1 : 0) - S.wind) * ease(dt, 3);
   S.curAmt += ((currentOn() ? 1 : 0) - S.curAmt) * ease(dt, 2);
-  const dens = S.dens, sun = S.sun, storm = S.stormAmt, cur = S.curAmt;
+  S.moonP += (L0.moon - S.moonP) * ease(dt, 2);
+  S.crestPos += dt * (1.2 + 2.4 * S.wind);             // whitecaps move faster in the wind
+  const dens = S.dens, sun = S.sun, storm = S.stormAmt, rain = Math.max(storm, 0.35 * S.drizzle), wind = S.wind, cur = S.curAmt;
+  const moonX = 70 + S.moonP * 150, moonY = HZ - 7 - Math.sin(S.moonP * Math.PI) * 30, moonShow = storm < 0.5 && sun < 0.6;
   const night = [C['sky-deep'], C.sky], stormy = [mixRGB(C['sky-deep'], C.outline, 0.5), C['sky-deep']],
     dawnSky = [mixRGB(C.sky, C['sky-deep'], 0.4), mixRGB(C.sky, C.lamp, 0.5)];
   const skyTop = mixRGB(mixRGB(night[0], stormy[0], storm), dawnSky[0], sun), skyBot = mixRGB(mixRGB(night[1], stormy[1], storm), dawnSky[1], sun);
   const seaTop = mixRGB(C.sea, C.lamp, 0.18 * sun), sunX = W * 0.72, sunR = 10, sunY = HZ + (1 - sun) * (sunR + 3);
-  const starTh = L0.starTh + (1 - L0.starTh) * sun * 0.9;
-  const crestOff = Math.floor(now * 1.2) % 490, rainOff = Math.floor(now * 9) % 880, curOff = Math.floor(now * CFG.current.vy * 2) % 900;
+  const starTh = Math.min(0.999, L0.starTh + 0.006 * S.drizzle + (1 - L0.starTh) * sun * 0.9);
+  const crestOff = Math.floor(S.crestPos) % 490, rainOff = Math.floor(now * 9) % 880, curOff = Math.floor(now * CFG.current.vy * 2) % 900;
 
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x; Larr[i] = lit(x, y); Garr[i] = lit.gl || 0;
@@ -674,12 +683,16 @@ function renderBackground(now) {
       const t = y / HZ; set(t > b ? skyBot : skyTop);
       if (sun > 0.01 && t * 2 - 1 > b + (1 - sun)) { set(skyBot); mixT(C.beam, 0.25); }
       if (storm < 0.5 && N.star[i] > starTh && y < HZ - 5) set(C.star);
+      if (moonShow) {                                   // a crescent moon
+        const md = Math.hypot(x - moonX, y - moonY);
+        if (md < 4.2 && Math.hypot(x - moonX - 1.8, y - moonY + 0.9) >= 3.6) set(C.star);
+      }
       if (sun > 0.01) { const sd = Math.hypot(x - sunX, (y - sunY) * 1.1); if (sd < sunR) set(sd < sunR - 2 ? C.beam : C['beam-core']); }   // the sun rises
     } else {
       const row = y - HZ, ts = row / (H - HZ);
       set(ts > b ? C['sea-deep'] : seaTop);
       const xx = x + 700 + (((row / 5) | 0) % 2 ? crestOff : -crestOff);
-      if (row % 5 === 2 && ((xx + row * 3) % 7) < 3 && hash(Math.floor((xx + row * 3) / 7), row, 11) > 0.62) set(row < 10 ? C.crest : C['sea-light']);
+      if (row % 5 === 2 && ((xx + row * 3) % 7) < 3 && hash(Math.floor((xx + row * 3) / 7), row, 11) > 0.62 - 0.2 * wind) set(row < 10 ? C.crest : C['sea-light']);
       if (cur > 0.05) {                                 // current lines drifting down the bay
         const yy = y - curOff + 900;
         if (((x * 3 + yy) % 29) === 0 && hash(Math.floor(x / 6), Math.floor(yy / 9), 31) > 1 - 0.5 * cur) set(C['sea-light']);
@@ -714,9 +727,9 @@ function renderBackground(now) {
       }
     }
     // storm rain, drifting slowly
-    if (storm > 0.02) {                                 // rain thins out as the storm passes
+    if (rain > 0.02) {                                  // drizzle in tide 2, rain in the storm, thinning as it passes
       const yy = y - rainOff + 990;
-      if (((x + yy * 2) % 11) === 0 && hash(Math.floor((x + yy * 2) / 11), Math.floor(yy / 5), 13) > 1 - 0.45 * storm) mixT(C.crest, 0.6);
+      if (((x + yy * 2) % 11) === 0 && hash(Math.floor((x + yy * 2) / 11), Math.floor(yy / 5), 13) > 1 - 0.45 * rain) mixT(C.crest, 0.6);
     }
     const k = i * 4; d[k] = cr; d[k + 1] = cg; d[k + 2] = cb; d[k + 3] = 255;
   }
