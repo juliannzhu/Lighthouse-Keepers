@@ -1040,7 +1040,7 @@ function frostIcon() {
 function guideText() {
   const st = S.stage;
   if (inRound()) return S.T < S.guide.until ? { text: S.guide.text } : null;   // the Pilot page shows the headset signal
-  if (frosty()) return { frost: true, text: 'Lamp is frosty — grown-up, check the headset' };
+  if (frosty()) return { frost: true, text: 'Lamp is frosty — check the headset' };
   if (S.T < S.guide.until) return { text: S.guide.text };
   if (st === 'lighting') return { text: S.reading && S.reading.q >= 0.75 ? 'The lamp is ready. Sit tall and keep your eyes on the light.' : 'Sit tall. The lamp is warming up.' };
   return null;
@@ -1068,8 +1068,8 @@ function updateHUD() {
   // (while the Dawn summary is up, its own buttons do the job)
   $('menu').classList.toggle('hidden', !screensAwake() || st === 'dawn');
   setText($('starCnt'), String(PROG.stars));
-  const hint = st === 'lighting' ? `Grown-ups: open ${location.host || 'the bridge'}/pilot, or press Enter to start.`
-    : st === 'end' ? 'Grown-ups: press Enter for a new night.' : '';
+  const hint = st === 'lighting' ? `Open ${location.host || 'the bridge'}/pilot, or press Enter to start.`
+    : st === 'end' ? 'Press Enter for a new night.' : '';
   $('hudHint').classList.toggle('hidden', !hint);
   setText($('hudHint'), hint);
 }
