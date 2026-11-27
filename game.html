@@ -58,7 +58,7 @@
   .moreBtns { display: flex; flex-wrap: wrap; align-items: flex-start; max-width: 620px; }
   .moreBtns .lk-btn { font-size: 16px; line-height: 20px; padding: 2px 10px 6px; }
 
-  /* full-screen child screens: shop, decorate, logbook (drawn for a 960x540 stage) */
+  /* full-screen child screens: shop, decorate, logbook, rescue album (drawn for a 960x540 stage) */
   #over { position: fixed; inset: 0; z-index: 10; background: var(--surface); display: flex; overflow: auto; }
   .sheet { margin: auto; flex: none; position: relative; width: 960px; height: 540px; display: flex; flex-direction: column; font-family: var(--font-pixel); color: var(--ink); }
   .sheet .bar { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) var(--space-4); }
@@ -122,7 +122,17 @@
   .bdg .cnt { font-size: 14px; color: var(--ink-muted); }
   .bdg.done .cnt { color: var(--success); }
 
-
+  .book { display: grid; grid-template-columns: 1fr 1fr; margin: 0 var(--space-4) var(--space-4); border: 4px solid var(--border); background: var(--surface-raised); flex: 1; min-height: 0; }
+  .page { padding: var(--space-2) var(--space-4); overflow-y: auto; }
+  .page + .page { border-left: 4px dashed var(--border); }
+  .page h2 { font-size: 20px; margin: 0 0 var(--space-2); }
+  .sgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); margin-bottom: var(--space-2); }
+  .st { text-align: center; padding: 6px 4px; background: var(--surface); border: 2px solid var(--border); }
+  .st.met { border-color: var(--lamp); }
+  .st canvas { image-rendering: pixelated; display: block; margin: 0 auto; }
+  .st div { font-size: 16px; line-height: 18px; margin-top: 4px; }
+  .st small { display: block; font-family: var(--font-read); font-size: 13px; line-height: 16px; color: var(--ink-muted); }
+  .st.unmet div { color: var(--ink-muted); }
 
   .pause { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; font-family: var(--font-pixel); }
 
@@ -142,6 +152,7 @@
       <div class="moreBtns" id="moreBtns">
         <button class="lk-btn secondary" data-open="decorate">Decorate</button>
         <button class="lk-btn secondary" data-open="logbook">Logbook</button>
+        <button class="lk-btn secondary" data-open="album">Rescue album</button>
       </div>
     </div>
   </div>
@@ -236,7 +247,7 @@ const store = {
   set(k, v) { try { localStorage.setItem('lk.' + k, JSON.stringify(v)); } catch (e) {} },
 };
 
-// ---------- the family's progress: sea stars, bag, decorations, logbook counters ----------
+// ---------- the family's progress: sea stars, bag, decorations, logbook counters, rescue album ----------
 const DEC = Object.fromEntries(LK.DATA.decorations.map(d => [d.id, d]));
 const SLOT = Object.fromEntries(LK.DATA.slots.map(s => [s.id, s]));
 const COUNTERS = { passengersHome: 0, boatsHome: 0, steadyBeams: 0, flares: 0, stormShipsHome: 0, nightsPlayed: 0, routesCompleted: 0, rocksRevealed: 0, ruinsLit: 0 };
@@ -252,11 +263,11 @@ const PROG = (() => {
   for (const s in placed) if (!DEC[placed[s]] || !bag.includes(placed[s])) delete placed[s];
   placed.tower ??= 'paintClassic';
   return { bag, placed, stars: store.get('stars', 0), counters: { ...COUNTERS, ...store.get('counters', {}) },
-    placedEver: store.get('placedEver', Object.values(placed).filter(id => id !== 'paintClassic')), badges: store.get('badges', []) };
+    placedEver: store.get('placedEver', Object.values(placed).filter(id => id !== 'paintClassic')), badges: store.get('badges', []), met: store.get('met', []) };
 })();
 function saveProg() {
   store.set('bag', PROG.bag); store.set('placed', PROG.placed); store.set('stars', PROG.stars); store.set('counters', PROG.counters);
-  store.set('placedEver', PROG.placedEver); store.set('badges', PROG.badges);
+  store.set('placedEver', PROG.placedEver); store.set('badges', PROG.badges); store.set('met', PROG.met);
 }
 saveProg();
 
@@ -281,6 +292,17 @@ function checkBadges() {
   }
   if (got.length) saveProg();
   return got;
+}
+
+// Rescue Album: every boat carries a named passenger (design-system/data/passengers.json)
+const PEOPLE = LK.DATA.passengers;
+const GROUP_OF = { row: 'Families', ferry: 'Families', sail: 'Sailors', storm: 'Sailors', fish: 'Fishers' };
+const GROUP_HINT = { Families: 'Comes on rowing boats and the ferry', Sailors: 'Comes on sail boats', Fishers: 'Comes on fishing boats' };
+function pickPassenger(type) {
+  const group = PEOPLE.filter(x => x.group === GROUP_OF[type]), aboard = S ? S.boats.map(b => b.who) : [];
+  // friends not met yet come first, in album order, so the album fills in steadily
+  const fresh = group.find(x => !PROG.met.includes(x.name) && !aboard.includes(x.name));
+  return (fresh || group[Math.floor(Math.random() * group.length)]).name;
 }
 
 // ---------- attention input: headset over the bridge, or the Space-bar simulator ----------
@@ -320,7 +342,7 @@ function newNight() {
     highContrast: store.get('highContrast', false), guide: { text: '', until: 0 }, nextSpawn: 0,
     channelOnce: false, summaryShown: false, snap: null, transT0: 0, transDur: 1.5, sun: 0, stormAmt: 0, lastNow: null,
     layout: 1, drizzle: 0, wind: 0, curAmt: 0, crestPos: 0, moonP: 0,
-    night: { steady: 0, flares: 0, rocks: 0, routes: 0, storm: 0, ruins: false },
+    night: { steady: 0, flares: 0, rocks: 0, routes: 0, storm: 0, ruins: false, newFriends: [] },
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
   makeNightRocks();
@@ -440,7 +462,7 @@ function pickType() {
 }
 function makeBoat(type, x, y) {
   const sz = LK.spriteSize(spriteOf(type));
-  return { type, x, y, w: sz.w, h: sz.h, passengers: CFG.passengers[type], state: 'sea', left: true,
+  return { type, x, y, w: sz.w, h: sz.h, passengers: CFG.passengers[type], who: pickPassenger(type), state: 'sea', left: true,
     trail: [], pauseUntil: 0, status: 'ready', dockT: 0, slotX: 0, slotY: 0 };
 }
 // New boats sail in from the right edge to a waiting spot at the fog edge.
@@ -683,7 +705,9 @@ function dockBoat(b, quiet) {
   S.passengers += b.passengers; S.boatsHome++;
   if (S.tideStats) S.tideStats.boats++;
   if (!quiet && S.stage !== 'dawn') { S.night.routes++; if (b.type === 'storm') S.night.storm++; }
-  if (!quiet && S.stage !== 'dawn') say(b.type === 'storm' ? 'The storm ship is home! Every passenger is safe.' : 'A boat is home!', 4);
+  // the passenger's sticker fills in the Rescue Album the first time they come home
+  if (b.who && !PROG.met.includes(b.who)) { PROG.met.push(b.who); S.night.newFriends.push(b.who); saveProg(); }
+  if (!quiet && S.stage !== 'dawn') say(b.type === 'storm' ? `The storm ship is home! ${b.who} and every passenger are safe.` : `${b.who} is home!`, 4);
   autoSelect();
 }
 const currentOn = () => S.stage === 'tide' && S.tide === CFG.currentTide;
@@ -1075,7 +1099,7 @@ function onPilotCmd(c) {
   publish(true);
 }
 
-// ---------- Dawn: team summary, sea stars and new badges ----------
+// ---------- Dawn: team summary, sea stars, new badges and album friends ----------
 function showDawn() {
   if (S.summaryShown) return;
   S.summaryShown = true;
@@ -1093,16 +1117,17 @@ function showDawn() {
     n > last ? `<p class="up"><span aria-hidden="true">▲</span> ${n - last} more than last night</p>` :
     n === last ? `<p class="same">Just like last night.</p>` : `<p class="same">Every boat came home safely.</p>`;
   const badgeLines = got.map(b => `<p class="news">New badge: ${escapeHTML(b.name)}! +${CFG.badgeStars[b.tier]} sea stars</p>`).join('');
+  const friends = nt.newFriends.length ? `<p class="news">New in your rescue album: ${nt.newFriends.map(escapeHTML).join(', ')}</p>` : '';
   const d = $('dawn');
   d.innerHTML = `
     <h1 class="game-title">Dawn!</h1>
     <p class="big">Together you brought ${n} passenger${n === 1 ? '' : 's'} home.</p>
     ${cmp}
     <div class="stars"><span class="si"></span><span>+${earned} sea star${earned === 1 ? '' : 's'} tonight</span></div>
-    ${badgeLines}
+    ${badgeLines}${friends}
     <div class="btns">
       <button class="lk-btn" data-open="shop">Shop</button><button class="lk-btn" data-open="decorate">Decorate</button>
-      <button class="lk-btn secondary" data-open="logbook">Logbook</button>
+      <button class="lk-btn secondary" data-open="logbook">Logbook</button><button class="lk-btn secondary" data-open="album">Rescue album</button>
       <button class="lk-btn secondary" id="goodnight">Goodnight</button>
     </div>`;
   d.classList.remove('hidden');
@@ -1111,11 +1136,11 @@ function showDawn() {
   publish(true);
 }
 
-// ---------- the child's screens: shop, decorate, logbook ----------
+// ---------- the child's screens: shop, decorate, logbook, rescue album ----------
 // They open only at rests and at Dawn: the Keeper has no input during a tide.
 const UI = { stack: [], cat: 'toppers', sel: 'flag', tab: 'all', slot: null };
 const screensAwake = () => S.stage === 'rest' || S.stage === 'end' || (S.stage === 'dawn' && S.summaryShown);
-const SCREEN_NAME = { shop: 'Sea Star Shop', decorate: 'Decorate', logbook: "Keeper's Logbook" };
+const SCREEN_NAME = { shop: 'Sea Star Shop', decorate: 'Decorate', logbook: "Keeper's Logbook", album: 'Rescue Album' };
 const blurButtons = () => { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); };
 function openScreen(kind) {
   if (!screensAwake() || UI.stack[UI.stack.length - 1] === kind) return;
@@ -1132,7 +1157,7 @@ function renderScreen() {
   const focus = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.k : null;
   const sheet = $('sheet');
   sheet.setAttribute('aria-label', SCREEN_NAME[k]);
-  ({ shop: renderShop, decorate: renderDecorate, logbook: renderLogbook })[k](sheet);
+  ({ shop: renderShop, decorate: renderDecorate, logbook: renderLogbook, album: renderAlbum })[k](sheet);
   starIcons(sheet, 3);
   // keep keyboard focus on the same control after a redraw
   const el = (focus && sheet.querySelector(`[data-k="${CSS.escape(focus)}"]`)) || sheet.querySelector('[data-k="close"]');
@@ -1325,6 +1350,34 @@ function renderLogbook(sheet) {
       for (let i = 0; i < 8; i++) segs.appendChild(el('i', i < on ? 'on' : null));
       info.append(segs, el('div', 'cnt', done ? `✓ ${b.tier} badge` : `${have} / ${b.goal}`));
       card.appendChild(info); grid.appendChild(card);
+    });
+  });
+}
+
+// Rescue Album: a sticker for every passenger brought home
+function renderAlbum(sheet) {
+  sheet.innerHTML = '';
+  const met = PEOPLE.filter(x => PROG.met.includes(x.name)).length;
+  sheetBar(sheet, 'Rescue Album', [el('span', 'sum', `${met} of ${PEOPLE.length} friends met`), btn('lk-btn secondary', 'Close ×', 'close', closeScreen)]);
+  const book = el('div', 'book'), pages = [el('div', 'page'), el('div', 'page')];
+  book.append(...pages); sheet.appendChild(book);
+  ['Fishers', 'Families', 'Sailors'].forEach((g, gi) => {
+    const pg = pages[gi < 2 ? 0 : 1];
+    pg.appendChild(el('h2', null, g));
+    const grid = el('div', 'sgrid'); pg.appendChild(grid);
+    PEOPLE.filter(x => x.group === g).forEach(x => {
+      const isMet = PROG.met.includes(x.name), card = el('div', 'st ' + (isMet ? 'met' : 'unmet'));
+      card.appendChild(LK.spriteCanvas(16, 22, 3, (c, p) => {
+        LK.avatar(c, 2, 1, p, x);
+        if (!isMet) {   // a silhouette until they come home
+          const d = c.getImageData(0, 0, 16, 22), col = LK.parse(p.border);
+          for (let i = 0; i < d.data.length; i += 4) if (d.data[i + 3]) { d.data[i] = col[0]; d.data[i + 1] = col[1]; d.data[i + 2] = col[2]; }
+          c.putImageData(d, 0, 0);
+        }
+      }));
+      card.appendChild(el('div', null, isMet ? x.name : '???'));
+      if (!isMet) card.appendChild(el('small', null, GROUP_HINT[g]));
+      grid.appendChild(card);
     });
   });
 }
