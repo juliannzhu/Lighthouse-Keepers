@@ -1,0 +1,145 @@
+[
+ {
+  "n": 1,
+  "name": "Still Water",
+  "goal": "Learn the loop",
+  "boats": "3–4 (rowboats, sailboats)",
+  "fog": 0.65,
+  "newThing": "Hidden rocks and the first steady beam",
+  "summary": "Light fog, one small island, buoys marking an easy lane and a few hidden rocks. The Keeper learns that holding the light reveals things; the Pilot learns to draw routes.",
+  "place": [
+   {
+    "id": "buoy",
+    "x": 0.46,
+    "y": 0.6
+   },
+   {
+    "id": "buoy",
+    "x": 0.66,
+    "y": 0.74
+   },
+   {
+    "id": "driftwood",
+    "x": 0.74,
+    "y": 0.5
+   },
+   {
+    "id": "rock",
+    "x": 0.6,
+    "y": 0.66,
+    "hidden": true
+   },
+   {
+    "id": "rock",
+    "x": 0.82,
+    "y": 0.62,
+    "hidden": true
+   }
+  ],
+  "islands": [
+   {
+    "id": "pebble",
+    "x": 0.54,
+    "y": 0.86
+   }
+  ]
+ },
+ {
+  "n": 2,
+  "name": "Kelp & Currents",
+  "goal": "Make choices",
+  "boats": "4–5 (adds fishing boats)",
+  "fog": 0.8,
+  "newThing": "Slow zones and a sandbar that appears mid-round",
+  "summary": "Kelp beds and jellyfish slow boats down, a fishing net and trap lines block lanes, a sandbar rises at low tide, and a friendly whale surfaces once. Medium islands split the bay.",
+  "place": [
+   {
+    "id": "kelp",
+    "x": 0.5,
+    "y": 0.7
+   },
+   {
+    "id": "jelly",
+    "x": 0.72,
+    "y": 0.82
+   },
+   {
+    "id": "net",
+    "x": 0.8,
+    "y": 0.56
+   },
+   {
+    "id": "sandbar",
+    "x": 0.4,
+    "y": 0.9
+   },
+   {
+    "id": "whale",
+    "x": 0.66,
+    "y": 0.46
+   },
+   {
+    "id": "rockCluster",
+    "x": 0.6,
+    "y": 0.62,
+    "hidden": true
+   }
+  ],
+  "islands": [
+   {
+    "id": "crescent",
+    "x": 0.88,
+    "y": 0.8
+   }
+  ]
+ },
+ {
+  "n": 3,
+  "name": "Storm Rising",
+  "goal": "Hold the light",
+  "boats": "3 + the Storm Ship",
+  "fog": 1,
+  "newThing": "Currents and an iceberg shelf only a steady beam shows",
+  "summary": "Thick fog and rain. A whirlpool, an iceberg with a hidden shelf, a shipwreck, sea stacks and currents that only show under a steady beam. Ends with the Storm Ship.",
+  "place": [
+   {
+    "id": "whirlpool",
+    "x": 0.55,
+    "y": 0.72
+   },
+   {
+    "id": "iceberg",
+    "x": 0.76,
+    "y": 0.5
+   },
+   {
+    "id": "stack",
+    "x": 0.42,
+    "y": 0.62
+   },
+   {
+    "id": "wreck",
+    "x": 0.88,
+    "y": 0.76
+   },
+   {
+    "id": "current",
+    "x": 0.66,
+    "y": 0.62,
+    "hidden": true
+   },
+   {
+    "id": "floe",
+    "x": 0.36,
+    "y": 0.86
+   }
+  ],
+  "islands": [
+   {
+    "id": "arch",
+    "x": 0.9,
+    "y": 0.92
+   }
+  ]
+ }
+]

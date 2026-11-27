@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../lk-kit.css">
+<script src="../lk-kit.js"></script>
+
+<meta charset="utf-8">
+<title>Rescue album</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-pixel); }
+  .top { display: flex; align-items: baseline; gap: var(--space-4); padding: var(--space-4) var(--space-4) 0; }
+  .top h1 { margin: 0; flex: 1; } .top span { font-size: 18px; color: var(--ink-muted); }
+  .book { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: var(--space-4); border: 4px solid var(--border); background: var(--surface-raised); }
+  .page { padding: var(--space-4); }
+  .page + .page { border-left: 4px dashed var(--border); }
+  h2 { font-size: 20px; margin: 0 0 var(--space-2); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+  .st { text-align: center; padding: 6px 4px; background: var(--surface); border: 2px solid var(--border); }
+  .st.met { border-color: var(--lamp); }
+  .st canvas { image-rendering: pixelated; display: block; margin: 0 auto; }
+  .st div { font-size: 14px; line-height: 17px; margin-top: 4px; }
+  .st.unmet div { color: var(--ink-muted); }
+  .note { font-family: var(--font-read); font-size: 13px; color: var(--ink-muted); margin: 0 var(--space-4); }
+</style>
+</head>
+<body>
+<div class="top"><h1 class="game-heading">Rescue Album</h1><span id="sum"></span></div>
+<div class="book"><div class="page" id="p1"></div><div class="page" id="p2"></div></div>
+<p class="note">Every boat carries named passengers. The first time one comes home, their sticker fills in. Unmet friends show as a silhouette with a hint, so kids know who to look for. "Special guests" (whale, seal, puffin) come from obstacles and islands.</p>
+<script>
+  function sticker(fn, met) {
+    var cv = LK.spriteCanvas(16, 22, 3, function (ctx, p) {
+      fn(ctx, p);
+      if (!met) { // silhouette
+        var d = ctx.getImageData(0, 0, 16, 22), c = LK.parse(p.border);
+        for (var i = 0; i < d.data.length; i += 4) if (d.data[i + 3]) { d.data[i] = c[0]; d.data[i + 1] = c[1]; d.data[i + 2] = c[2]; }
+        ctx.putImageData(d, 0, 0);
+      }
+    });
+    return cv;
+  }
+  function draw() {
+    var P = LK.DATA.passengers, groups = ['Fishers', 'Families', 'Sailors'];
+    var specials = [['Friendly whale', 'whale', true], ['Seal', 'seal', true], ['Puffin', 'puffin', false], ['Otter', 'otter', false]];
+    var met = P.filter(function (x) { return x.met; }).length + specials.filter(function (s) { return s[2]; }).length;
+    document.getElementById('sum').textContent = met + ' of ' + (P.length + specials.length) + ' friends met';
+    var pages = [document.getElementById('p1'), document.getElementById('p2')]; pages.forEach(function (pg) { pg.innerHTML = ''; });
+    groups.concat(['Special guests']).forEach(function (g, gi) {
+      var pg = pages[gi < 2 ? 0 : 1];
+      var h = document.createElement('h2'); h.textContent = g; pg.appendChild(h);
+      var grid = document.createElement('div'); grid.className = 'grid'; grid.style.marginBottom = '12px'; pg.appendChild(grid);
+      var list = g === 'Special guests' ? specials.map(function (s) { return { name: s[0], sprite: s[1], met: s[2] }; }) : P.filter(function (x) { return x.group === g; });
+      list.forEach(function (x) {
+        var el = document.createElement('div'); el.className = 'st ' + (x.met ? 'met' : 'unmet');
+        el.appendChild(sticker(function (ctx, p) {
+          if (x.sprite) { var s = LK.SPRITES[x.sprite] || LK.OBSTACLE_SPRITES[x.sprite], z = LK.spriteSize(s); if (z.w > 16) { s = s.map(function (r) { return r.slice(0, 16); }); z = LK.spriteSize(s); } LK.drawSprite(ctx, s, Math.floor((16 - z.w) / 2), Math.floor((22 - z.h) / 2), p); }
+          else LK.avatar(ctx, 2, 1, p, x);
+        }, x.met));
+        var n = document.createElement('div'); n.textContent = x.met ? x.name : '???'; el.appendChild(n);
+        grid.appendChild(el);
+      });
+    });
+  }
+  LK.ready(draw); LK.onTheme(draw);
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../lk-kit.css">
+<script src="../lk-kit.js"></script>
+
+<meta charset="utf-8">
+<title>Tide plans</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-read); }
+  .tide { display: grid; grid-template-columns: 560px 1fr; gap: var(--space-4); padding: var(--space-4); border-bottom: 1px solid var(--border); }
+  canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+  h2 { font-family: var(--font-pixel); font-weight: 600; font-size: 28px; line-height: 32px; margin: 0; }
+  .goal { font-family: var(--font-pixel); font-size: 18px; color: var(--accent); margin: 2px 0 var(--space-2); }
+  p { margin: 0 0 var(--space-2); font-size: 15px; line-height: 22px; color: var(--ink-muted); }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 4px var(--space-2); margin: 0; font-size: 14px; line-height: 20px; }
+  dt { color: var(--ink-muted); } dd { margin: 0; }
+  .toggle { display: flex; gap: var(--space-2); align-items: center; padding: var(--space-4); font-size: 14px; }
+</style>
+</head>
+<body>
+<label class="toggle"><input type="checkbox" id="steady" checked> Show with a steady beam (hidden things revealed)</label>
+<div id="out"></div>
+<script>
+  var NAMES = {}; LK.DATA.obstacles.forEach(function (o) { NAMES[o.id] = o.name; });
+  var ISL = {}; LK.DATA.islands.forEach(function (i) { ISL[i.id] = i; });
+  var BOATS = {
+    1: [{ t: 'sail', x: 0.62, y: 0.54 }, { t: 'row', x: 0.9, y: 0.7 }, { t: 'row', x: 0.4, y: 0.78 }],
+    2: [{ t: 'fish', x: 0.58, y: 0.56 }, { t: 'sail', x: 0.88, y: 0.66 }, { t: 'row', x: 0.34, y: 0.8 }, { t: 'fish', x: 0.92, y: 0.46 }],
+    3: [{ t: 'storm', x: 0.7, y: 0.42 }, { t: 'row', x: 0.46, y: 0.86 }, { t: 'sail', x: 0.86, y: 0.66 }]
+  };
+  function draw() {
+    var out = document.getElementById('out'); out.innerHTML = '';
+    var steady = document.getElementById('steady').checked;
+    LK.DATA.tides.forEach(function (t) {
+      var row = document.createElement('div'); row.className = 'tide';
+      var cv = document.createElement('canvas');
+      LK.harbour(cv, {
+        phase: t.n === 3 ? 'storm' : 'tide', attention: 0.7, steady: steady, fogDensity: 0.72 * t.fog, boats: BOATS[t.n], hiddenRocks: [],
+        underlay: function (ctx, p, lit, env) {
+          (t.islands || []).forEach(function (i) {
+            var I = ISL[i.id], x = Math.round(i.x * env.W - I.w / 2), y = Math.round(i.y * env.H - I.h);
+            LK.drawIsland(ctx, p, i.id, x, y, { dim: lit(x + I.w / 2, y + I.h / 2) < 0.2, lit: lit(x + I.w / 2, y + I.h / 2) > 0.3 });
+          });
+          t.place.forEach(function (o) {
+            var sz = LK.obstacleSize(o.id), x = Math.round(o.x * env.W - sz.w / 2), y = Math.round(o.y * env.H - sz.h / 2);
+            var L = lit(x + sz.w / 2, y + sz.h / 2);
+            if (o.hidden && !(env.steady && L > 0.25)) return;
+            LK.drawObstacle(ctx, p, o.id, x, y, { dim: L < 0.2, revealed: env.steady && L > 0.25 });
+          });
+        }
+      });
+      var info = document.createElement('div');
+      var obs = t.place.map(function (o) { return NAMES[o.id] + (o.hidden ? ' (hidden)' : ''); });
+      obs = obs.filter(function (v, i) { return obs.indexOf(v) === i; });
+      info.innerHTML = '<h2>Tide ' + t.n + ' · ' + t.name + '</h2><div class="goal">' + t.goal + '</div><p></p><dl>' +
+        '<dt>New</dt><dd>' + t.newThing + '</dd><dt>Boats</dt><dd>' + t.boats + '</dd><dt>Obstacles</dt><dd>' + obs.join(', ') + '</dd>' +
+        '<dt>Island</dt><dd>' + t.islands.map(function (i) { return ISL[i.id].name; }).join(', ') + '</dd><dt>Fog</dt><dd>' + ['', 'light', 'medium', 'thick + rain'][t.n] + '</dd></dl>';
+      info.querySelector('p').textContent = t.summary;
+      row.appendChild(cv); row.appendChild(info); out.appendChild(row);
+    });
+  }
+  document.getElementById('steady').addEventListener('input', draw);
+  LK.ready(draw); LK.onTheme(draw);
+</script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+[
+ {
+  "id": "toppers",
+  "name": "Toppers"
+ },
+ {
+  "id": "lights",
+  "name": "Lights"
+ },
+ {
+  "id": "paint",
+  "name": "Paint"
+ },
+ {
+  "id": "garden",
+  "name": "Garden"
+ },
+ {
+  "id": "friends",
+  "name": "Friends"
+ },
+ {
+  "id": "dock",
+  "name": "Dock"
+ },
+ {
+  "id": "sky",
+  "name": "Sky"
+ },
+ {
+  "id": "seasonal",
+  "name": "Seasonal"
+ }
+]

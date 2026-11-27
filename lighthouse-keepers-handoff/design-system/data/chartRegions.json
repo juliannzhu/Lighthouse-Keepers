@@ -1,0 +1,50 @@
+[
+ {
+  "id": "gullPoint",
+  "name": "Gull Point",
+  "cells": [
+   0,
+   0,
+   6,
+   4
+  ],
+  "done": 1,
+  "reward": "10 sea stars + Seagulls"
+ },
+ {
+  "id": "kelpShallows",
+  "name": "Kelp Shallows",
+  "cells": [
+   6,
+   0,
+   12,
+   4
+  ],
+  "done": 0.75,
+  "reward": "10 sea stars + Window plant"
+ },
+ {
+  "id": "whaleDeep",
+  "name": "Whale Deep",
+  "cells": [
+   0,
+   4,
+   6,
+   8
+  ],
+  "done": 0.4,
+  "reward": "15 sea stars + Whale badge"
+ },
+ {
+  "id": "stormReach",
+  "name": "Storm Reach",
+  "cells": [
+   6,
+   4,
+   12,
+   8
+  ],
+  "done": 0.1,
+  "reward": "20 sea stars + Hot-air balloon"
+ }
+]

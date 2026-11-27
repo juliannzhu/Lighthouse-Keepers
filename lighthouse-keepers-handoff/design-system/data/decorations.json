@@ -1,0 +1,769 @@
+[
+ {
+  "id": "flag",
+  "name": "Flag",
+  "category": "toppers",
+  "slots": [
+   "topper"
+  ],
+  "price": 3,
+  "sprite": "flag",
+  "blurb": "Waves hello to every boat."
+ },
+ {
+  "id": "pennant",
+  "name": "Long pennant",
+  "category": "toppers",
+  "slots": [
+   "topper"
+  ],
+  "price": 4,
+  "sprite": "pennant",
+  "blurb": "A long ribbon flag."
+ },
+ {
+  "id": "weathervane",
+  "name": "Fish weathervane",
+  "category": "toppers",
+  "slots": [
+   "topper"
+  ],
+  "price": 6,
+  "sprite": "weathervane",
+  "blurb": "Points where the wind blows."
+ },
+ {
+  "id": "starTopper",
+  "name": "Star topper",
+  "category": "toppers",
+  "slots": [
+   "topper"
+  ],
+  "price": 8,
+  "sprite": "starTopper",
+  "blurb": "A golden star on the roof."
+ },
+ {
+  "id": "bell",
+  "name": "Harbour bell",
+  "category": "toppers",
+  "slots": [
+   "topper"
+  ],
+  "price": 5,
+  "sprite": "bell",
+  "blurb": "Rings softly when a boat docks."
+ },
+ {
+  "id": "windsock",
+  "name": "Windsock",
+  "category": "toppers",
+  "slots": [
+   "topper"
+  ],
+  "price": 4,
+  "sprite": "windsock",
+  "blurb": "Striped and floppy."
+ },
+ {
+  "id": "crown",
+  "name": "Golden crown",
+  "category": "toppers",
+  "slots": [
+   "topper"
+  ],
+  "price": 12,
+  "sprite": "crown",
+  "blurb": "For the Keeper of all Keepers.",
+  "tag": "rare"
+ },
+ {
+  "id": "bunting",
+  "name": "Bunting",
+  "category": "lights",
+  "slots": [
+   "gallery"
+  ],
+  "price": 5,
+  "sprite": "bunting",
+  "blurb": "Little flags on the balcony."
+ },
+ {
+  "id": "stringLights",
+  "name": "String lights",
+  "category": "lights",
+  "slots": [
+   "gallery"
+  ],
+  "price": 7,
+  "sprite": "stringLights",
+  "blurb": "Tiny coloured bulbs."
+ },
+ {
+  "id": "lanternRow",
+  "name": "Lantern row",
+  "category": "lights",
+  "slots": [
+   "gallery"
+  ],
+  "price": 8,
+  "sprite": "lanternRow",
+  "blurb": "Four warm lanterns."
+ },
+ {
+  "id": "paperLanterns",
+  "name": "Paper lanterns",
+  "category": "lights",
+  "slots": [
+   "gallery"
+  ],
+  "price": 8,
+  "sprite": "paperLanterns",
+  "blurb": "Round and colourful.",
+  "tag": "new"
+ },
+ {
+  "id": "garland",
+  "name": "Flower garland",
+  "category": "lights",
+  "slots": [
+   "gallery"
+  ],
+  "price": 6,
+  "sprite": "garland",
+  "blurb": "Flowers all the way round."
+ },
+ {
+  "id": "paintClassic",
+  "name": "Classic stripes",
+  "category": "paint",
+  "slots": [
+   "tower"
+  ],
+  "price": 0,
+  "sprite": null,
+  "blurb": "The stripes you start with.",
+  "paint": "bands",
+  "color": "stripe",
+  "owned": true
+ },
+ {
+  "id": "paintBlue",
+  "name": "Blue stripes",
+  "category": "paint",
+  "slots": [
+   "tower"
+  ],
+  "price": 6,
+  "sprite": null,
+  "blurb": "Stripes in sky blue.",
+  "paint": "bands",
+  "color": "route"
+ },
+ {
+  "id": "paintSpiral",
+  "name": "Candy spiral",
+  "category": "paint",
+  "slots": [
+   "tower"
+  ],
+  "price": 10,
+  "sprite": null,
+  "blurb": "Twisty like a candy cane.",
+  "paint": "spiral",
+  "color": "stripe"
+ },
+ {
+  "id": "paintDots",
+  "name": "Polka dots",
+  "category": "paint",
+  "slots": [
+   "tower"
+  ],
+  "price": 8,
+  "sprite": null,
+  "blurb": "Dotty all over.",
+  "paint": "dots",
+  "color": "route"
+ },
+ {
+  "id": "paintChecker",
+  "name": "Checkers",
+  "category": "paint",
+  "slots": [
+   "tower"
+  ],
+  "price": 10,
+  "sprite": null,
+  "blurb": "Like a game board.",
+  "paint": "checker",
+  "color": "stripe"
+ },
+ {
+  "id": "paintWaves",
+  "name": "Waves",
+  "category": "paint",
+  "slots": [
+   "tower"
+  ],
+  "price": 10,
+  "sprite": null,
+  "blurb": "Waves that match the sea.",
+  "paint": "waves",
+  "color": "sea-light"
+ },
+ {
+  "id": "paintGreen",
+  "name": "Two-tone green",
+  "category": "paint",
+  "slots": [
+   "tower"
+  ],
+  "price": 8,
+  "sprite": null,
+  "blurb": "Green top, white bottom.",
+  "paint": "twotone",
+  "color": "success"
+ },
+ {
+  "id": "paintWhite",
+  "name": "All white",
+  "category": "paint",
+  "slots": [
+   "tower"
+  ],
+  "price": 4,
+  "sprite": null,
+  "blurb": "Clean and simple.",
+  "paint": "none",
+  "color": "stripe"
+ },
+ {
+  "id": "wreath",
+  "name": "Door wreath",
+  "category": "garden",
+  "slots": [
+   "door"
+  ],
+  "price": 4,
+  "sprite": "wreath",
+  "blurb": "A green ring for the door."
+ },
+ {
+  "id": "mat",
+  "name": "Welcome mat",
+  "category": "garden",
+  "slots": [
+   "door"
+  ],
+  "price": 2,
+  "sprite": "mat",
+  "blurb": "Wipe your boots!"
+ },
+ {
+  "id": "doorLantern",
+  "name": "Door lantern",
+  "category": "lights",
+  "slots": [
+   "door"
+  ],
+  "price": 5,
+  "sprite": "doorLantern",
+  "blurb": "Lights the way in."
+ },
+ {
+  "id": "flowerArch",
+  "name": "Flower arch",
+  "category": "garden",
+  "slots": [
+   "door"
+  ],
+  "price": 7,
+  "sprite": "flowerArch",
+  "blurb": "Flowers over the door."
+ },
+ {
+  "id": "boots",
+  "name": "Rain boots",
+  "category": "garden",
+  "slots": [
+   "door"
+  ],
+  "price": 3,
+  "sprite": "boots",
+  "blurb": "Left by the door."
+ },
+ {
+  "id": "curtains",
+  "name": "Curtains",
+  "category": "garden",
+  "slots": [
+   "window"
+  ],
+  "price": 3,
+  "sprite": "curtains",
+  "blurb": "Cosy window curtains."
+ },
+ {
+  "id": "windowPlant",
+  "name": "Window plant",
+  "category": "garden",
+  "slots": [
+   "window"
+  ],
+  "price": 4,
+  "sprite": "windowPlant",
+  "blurb": "A plant on the sill."
+ },
+ {
+  "id": "windowStar",
+  "name": "Window star",
+  "category": "lights",
+  "slots": [
+   "window"
+  ],
+  "price": 4,
+  "sprite": "windowStar",
+  "blurb": "A paper star in the window."
+ },
+ {
+  "id": "pot",
+  "name": "Flower pot",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 4,
+  "sprite": "pot",
+  "blurb": "Bright flowers."
+ },
+ {
+  "id": "sunflower",
+  "name": "Sunflower",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 5,
+  "sprite": "sunflower",
+  "blurb": "Tall and sunny."
+ },
+ {
+  "id": "bench",
+  "name": "Bench",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 6,
+  "sprite": "bench",
+  "blurb": "Sit and watch the boats."
+ },
+ {
+  "id": "mailbox",
+  "name": "Mailbox",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 4,
+  "sprite": "mailbox",
+  "blurb": "Letters from rescued passengers."
+ },
+ {
+  "id": "birdhouse",
+  "name": "Birdhouse",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 5,
+  "sprite": "birdhouse",
+  "blurb": "A home for small birds."
+ },
+ {
+  "id": "telescope",
+  "name": "Telescope",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 9,
+  "sprite": "telescope",
+  "blurb": "Spot boats far away."
+ },
+ {
+  "id": "sandcastle",
+  "name": "Sandcastle",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 4,
+  "sprite": "sandcastle",
+  "blurb": "With a tiny flag."
+ },
+ {
+  "id": "tent",
+  "name": "Camping tent",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 8,
+  "sprite": "tent",
+  "blurb": "Sleep under the stars."
+ },
+ {
+  "id": "picnic",
+  "name": "Picnic blanket",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 5,
+  "sprite": "picnic",
+  "blurb": "Snack time!"
+ },
+ {
+  "id": "birdbath",
+  "name": "Bird bath",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 6,
+  "sprite": "birdbath",
+  "blurb": "Gulls love a splash."
+ },
+ {
+  "id": "signpost",
+  "name": "Signpost",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 3,
+  "sprite": "signpost",
+  "blurb": "Points the way home."
+ },
+ {
+  "id": "gnome",
+  "name": "Garden gnome",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 5,
+  "sprite": "gnome",
+  "blurb": "Keeps watch at night."
+ },
+ {
+  "id": "shells",
+  "name": "Shell pile",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 2,
+  "sprite": "shells",
+  "blurb": "Found on the beach."
+ },
+ {
+  "id": "sapling",
+  "name": "Pine sapling",
+  "category": "garden",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 3,
+  "sprite": "sapling",
+  "blurb": "It will grow tall one day."
+ },
+ {
+  "id": "cat",
+  "name": "Lighthouse cat",
+  "category": "friends",
+  "slots": [
+   "pet"
+  ],
+  "price": 8,
+  "sprite": "cat",
+  "blurb": "Naps in the warm lamp room."
+ },
+ {
+  "id": "dog",
+  "name": "Harbour pup",
+  "category": "friends",
+  "slots": [
+   "pet"
+  ],
+  "price": 8,
+  "sprite": "dog",
+  "blurb": "Barks happily at boats."
+ },
+ {
+  "id": "puffin",
+  "name": "Puffin",
+  "category": "friends",
+  "slots": [
+   "pet"
+  ],
+  "price": 10,
+  "sprite": "puffin",
+  "blurb": "Small, round, very proud.",
+  "tag": "new"
+ },
+ {
+  "id": "sealPup",
+  "name": "Seal pup",
+  "category": "friends",
+  "slots": [
+   "pet"
+  ],
+  "price": 10,
+  "sprite": "sealPup",
+  "blurb": "Flops on the rocks."
+ },
+ {
+  "id": "crab",
+  "name": "Crab friend",
+  "category": "friends",
+  "slots": [
+   "pet"
+  ],
+  "price": 4,
+  "sprite": "crab",
+  "blurb": "Walks sideways."
+ },
+ {
+  "id": "turtle",
+  "name": "Sea turtle",
+  "category": "friends",
+  "slots": [
+   "pet"
+  ],
+  "price": 9,
+  "sprite": "turtle",
+  "blurb": "Slow and steady."
+ },
+ {
+  "id": "otter",
+  "name": "Otter",
+  "category": "friends",
+  "slots": [
+   "pet"
+  ],
+  "price": 12,
+  "sprite": "otter",
+  "blurb": "Holds a shell.",
+  "tag": "rare"
+ },
+ {
+  "id": "goose",
+  "name": "Canada goose",
+  "category": "friends",
+  "slots": [
+   "pet"
+  ],
+  "price": 7,
+  "sprite": "goose",
+  "blurb": "Honk."
+ },
+ {
+  "id": "buoy",
+  "name": "Red buoy",
+  "category": "dock",
+  "slots": [
+   "dock"
+  ],
+  "price": 3,
+  "sprite": "buoy",
+  "blurb": "Bobs by the dock."
+ },
+ {
+  "id": "trap",
+  "name": "Lobster trap",
+  "category": "dock",
+  "slots": [
+   "dock"
+  ],
+  "price": 4,
+  "sprite": "trap",
+  "blurb": "Empty, the lobster went home."
+ },
+ {
+  "id": "lifeRing",
+  "name": "Life ring",
+  "category": "dock",
+  "slots": [
+   "dock"
+  ],
+  "price": 4,
+  "sprite": "lifeRing",
+  "blurb": "Safety first."
+ },
+ {
+  "id": "anchor",
+  "name": "Anchor",
+  "category": "dock",
+  "slots": [
+   "dock"
+  ],
+  "price": 6,
+  "sprite": "anchor",
+  "blurb": "Heavy and shiny."
+ },
+ {
+  "id": "rowboat",
+  "name": "Little rowboat",
+  "category": "dock",
+  "slots": [
+   "dock"
+  ],
+  "price": 8,
+  "sprite": "row",
+  "blurb": "Your very own boat."
+ },
+ {
+  "id": "rod",
+  "name": "Fishing rod",
+  "category": "dock",
+  "slots": [
+   "dock"
+  ],
+  "price": 5,
+  "sprite": "rod",
+  "blurb": "For quiet mornings."
+ },
+ {
+  "id": "crates",
+  "name": "Crates",
+  "category": "dock",
+  "slots": [
+   "dock"
+  ],
+  "price": 3,
+  "sprite": "crates",
+  "blurb": "Supplies for the keeper."
+ },
+ {
+  "id": "dockLantern",
+  "name": "Dock lantern",
+  "category": "lights",
+  "slots": [
+   "dock"
+  ],
+  "price": 5,
+  "sprite": "dockLantern",
+  "blurb": "Glows at the end of the dock."
+ },
+ {
+  "id": "kite",
+  "name": "Kite",
+  "category": "sky",
+  "slots": [
+   "sky"
+  ],
+  "price": 6,
+  "sprite": "kite",
+  "blurb": "Flies over the island."
+ },
+ {
+  "id": "balloon",
+  "name": "Hot-air balloon",
+  "category": "sky",
+  "slots": [
+   "sky"
+  ],
+  "price": 12,
+  "sprite": "balloon",
+  "blurb": "Floats past at dawn.",
+  "tag": "rare"
+ },
+ {
+  "id": "gulls",
+  "name": "Seagulls",
+  "category": "sky",
+  "slots": [
+   "sky"
+  ],
+  "price": 2,
+  "sprite": "gull",
+  "blurb": "Two noisy friends."
+ },
+ {
+  "id": "plane",
+  "name": "Paper plane",
+  "category": "sky",
+  "slots": [
+   "sky"
+  ],
+  "price": 3,
+  "sprite": "plane",
+  "blurb": "Folded from a chart."
+ },
+ {
+  "id": "fireflies",
+  "name": "Fireflies",
+  "category": "sky",
+  "slots": [
+   "sky"
+  ],
+  "price": 6,
+  "sprite": "fireflies",
+  "blurb": "Tiny lights that drift slowly."
+ },
+ {
+  "id": "icicles",
+  "name": "Icicle lights",
+  "category": "seasonal",
+  "slots": [
+   "gallery"
+  ],
+  "price": 6,
+  "sprite": "icicles",
+  "blurb": "Winter sparkle.",
+  "season": "winter"
+ },
+ {
+  "id": "snowman",
+  "name": "Snowman",
+  "category": "seasonal",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 6,
+  "sprite": "snowman",
+  "blurb": "Winter only.",
+  "season": "winter"
+ },
+ {
+  "id": "pumpkin",
+  "name": "Pumpkin",
+  "category": "seasonal",
+  "slots": [
+   "gardenL",
+   "gardenR"
+  ],
+  "price": 4,
+  "sprite": "pumpkin",
+  "blurb": "Autumn only.",
+  "season": "autumn"
+ }
+]

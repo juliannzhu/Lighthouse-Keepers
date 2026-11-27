@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../lk-kit.css">
+<script src="../lk-kit.js"></script>
+
+<meta charset="utf-8">
+<title>Obstacles</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-read); }
+  .wrap { padding: var(--space-4); }
+  h2 { font-family: var(--font-pixel); font-weight: 600; font-size: 24px; line-height: 30px; margin: var(--space-4) 0 var(--space-2); }
+  h2 small { font-family: var(--font-read); font-size: 14px; font-weight: 400; color: var(--ink-muted); margin-left: var(--space-2); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+  .card { background: var(--surface-raised); border: 1px solid var(--border); padding: var(--space-2); }
+  .card canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+  h3 { font-family: var(--font-pixel); font-weight: 600; font-size: 18px; line-height: 24px; margin: var(--space-2) 0 2px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+  .chip { font-size: 12px; line-height: 16px; padding: 1px 6px; border: 1px solid var(--border); color: var(--ink-muted); }
+  .chip.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+  .chip.hid { border-style: dashed; color: var(--ink); }
+  p { margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+  .note { font-size: 14px; line-height: 20px; color: var(--ink-muted); margin: 0 0 var(--space-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="note">Rule for every obstacle: nothing sinks a boat. Bumping something costs time (the boat stops, bobs, and waits for a new route), never progress. Dashed chip = hidden until a steady beam finds it.</p>
+  <div id="out"></div>
+</div>
+<script>
+  var SIZES = [['small', 'Small', 'one boat-length or less'], ['medium', 'Medium', 'blocks a lane'], ['large', 'Large', 'reshapes the bay']];
+  function tile(o) {
+    var sz = LK.obstacleSize(o.id), W = 40, H = 24;
+    return LK.spriteCanvas(W, H, 1, function (ctx, p) {
+      for (var y = 0; y < H; y++) { ctx.fillStyle = y % 6 === 3 ? LK.mix(p.sea, p['sea-light'], 0.35) : (y < H / 2 ? p.sea : LK.mix(p.sea, p['sea-deep'], 0.5)); ctx.fillRect(0, y, W, 1); }
+      LK.drawObstacle(ctx, p, o.id, Math.floor((W - sz.w) / 2), Math.floor((H - sz.h) / 2), { revealed: true });
+    });
+  }
+  function draw() {
+    var out = document.getElementById('out'); out.innerHTML = '';
+    SIZES.forEach(function (s) {
+      var h = document.createElement('h2'); h.innerHTML = s[1] + ' <small>' + s[2] + '</small>'; out.appendChild(h);
+      var g = document.createElement('div'); g.className = 'grid'; out.appendChild(g);
+      LK.DATA.obstacles.filter(function (o) { return o.size === s[0]; }).forEach(function (o) {
+        var c = document.createElement('div'); c.className = 'card';
+        var tv = tile(o); tv.style.width = '100%'; tv.style.height = 'auto'; c.appendChild(tv);
+        var t = document.createElement('h3'); t.textContent = o.name; c.appendChild(t);
+        var chips = document.createElement('div'); chips.className = 'chips';
+        [1, 2, 3].forEach(function (n) { var k = document.createElement('span'); k.className = 'chip' + (o.tides.indexOf(n) >= 0 ? ' on' : ''); k.textContent = 'Tide ' + n; chips.appendChild(k); });
+        if (o.reveal === 'steady') { var hd = document.createElement('span'); hd.className = 'chip hid'; hd.textContent = 'Hidden'; chips.appendChild(hd); }
+        if (o.moves) { var mv = document.createElement('span'); mv.className = 'chip'; mv.textContent = 'Moves'; chips.appendChild(mv); }
+        c.appendChild(chips);
+        var p = document.createElement('p'); p.textContent = o.effect + (o.moves ? ' (' + o.moves + '.)' : ''); c.appendChild(p);
+        g.appendChild(c);
+      });
+    });
+  }
+  LK.ready(draw); LK.onTheme(draw);
+</script>
+</body>
+</html>

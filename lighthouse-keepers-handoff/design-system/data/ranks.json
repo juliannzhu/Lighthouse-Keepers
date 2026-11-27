@@ -1,0 +1,38 @@
+[
+ {
+  "n": 1,
+  "name": "Deckhand",
+  "need": 0,
+  "unlock": "Classic lighthouse"
+ },
+ {
+  "n": 2,
+  "name": "Lamp Lighter",
+  "need": 150,
+  "unlock": "Captain cap for your Keeper"
+ },
+ {
+  "n": 3,
+  "name": "Keeper",
+  "need": 400,
+  "unlock": "Stubby lighthouse style"
+ },
+ {
+  "n": 4,
+  "name": "Head Keeper",
+  "need": 800,
+  "unlock": "Stone lighthouse + cottage"
+ },
+ {
+  "n": 5,
+  "name": "Harbour Master",
+  "need": 1400,
+  "unlock": "Golden lamp glass"
+ },
+ {
+  "n": 6,
+  "name": "Lighthouse Legend",
+  "need": 2200,
+  "unlock": "Your name on the lighthouse door"
+ }
+]

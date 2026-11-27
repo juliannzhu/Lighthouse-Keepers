@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../lk-kit.css">
+<script src="../lk-kit.js"></script>
+
+<meta charset="utf-8">
+<title>Bay chart</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-pixel); }
+  .wrap { display: grid; grid-template-columns: 620px 1fr; gap: var(--space-4); padding: var(--space-4); }
+  canvas { image-rendering: pixelated; display: block; width: 620px; height: 420px; }
+  h1 { margin: 0 0 4px; }
+  .pct { font-size: 20px; margin-bottom: var(--space-2); }
+  .r { padding: 6px 10px; margin-bottom: 6px; background: var(--surface-raised); border: 2px solid var(--border); }
+  .r.done { border-color: var(--success); }
+  .r .n { font-size: 18px; display: flex; justify-content: space-between; }
+  .bar { display: flex; gap: 2px; margin: 4px 0; } .bar i { flex: 1; height: 6px; background: var(--border); } .bar i.on { background: var(--route); }
+  .rw { font-family: var(--font-read); font-size: 13px; color: var(--ink-muted); }
+  .small { font-family: var(--font-read); font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="c" width="124" height="84" aria-label="Bay chart with charted islands and foggy uncharted squares"></canvas>
+  <div>
+    <h1 class="game-heading">Bay Chart</h1>
+    <div class="pct" id="pct"></div>
+    <div id="regions"></div>
+    <p class="small">Each hidden rock or island a steady beam reveals is inked onto the chart and stays there. Finishing a region pays sea stars and a decoration. Uses the design doc's exploration objective.</p>
+  </div>
+</div>
+<script>
+  function draw() {
+    var cv = document.getElementById('c'), ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+    LK.bayChart(ctx, LK.pal(), 124, 84);
+    var R = LK.DATA.chartRegions, tot = R.reduce(function (a, r) { return a + r.done; }, 0) / R.length;
+    document.getElementById('pct').textContent = Math.round(tot * 100) + '% of the bay charted';
+    var box = document.getElementById('regions'); box.innerHTML = '';
+    R.forEach(function (r) {
+      var el = document.createElement('div'); el.className = 'r' + (r.done >= 1 ? ' done' : '');
+      el.innerHTML = '<div class="n"><span></span><span></span></div><div class="bar"></div><div class="rw"></div>';
+      el.querySelector('.n span').textContent = r.name; el.querySelectorAll('.n span')[1].textContent = Math.round(r.done * 100) + '%';
+      var bar = el.querySelector('.bar'); for (var i = 0; i < 10; i++) { var s = document.createElement('i'); if (i < Math.round(r.done * 10)) s.className = 'on'; bar.appendChild(s); }
+      el.querySelector('.rw').textContent = (r.done >= 1 ? 'Earned: ' : 'Reward: ') + r.reward;
+      box.appendChild(el);
+    });
+  }
+  LK.ready(draw); LK.onTheme(draw);
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+[
+ {
+  "name": "Fisher Fran",
+  "group": "Fishers",
+  "style": "souwester",
+  "hat": "lamp",
+  "coat": "stripe",
+  "skin": "skin-2",
+  "met": true
+ },
+ {
+  "name": "Old Gus",
+  "group": "Fishers",
+  "style": "beanie",
+  "hat": "roof",
+  "coat": "hull",
+  "skin": "skin-1",
+  "met": true
+ },
+ {
+  "name": "Marisol",
+  "group": "Fishers",
+  "style": "souwester",
+  "hat": "route",
+  "coat": "sea-light",
+  "skin": "skin-3",
+  "met": true
+ },
+ {
+  "name": "Big Ike",
+  "group": "Fishers",
+  "style": "beanie",
+  "hat": "stripe",
+  "coat": "success",
+  "skin": "skin-4",
+  "met": false
+ },
+ {
+  "name": "The Baker Twins",
+  "group": "Families",
+  "style": "beanie",
+  "hat": "success",
+  "coat": "lamp",
+  "skin": "skin-1",
+  "met": true
+ },
+ {
+  "name": "Grandma Lou",
+  "group": "Families",
+  "style": "beanie",
+  "hat": "sail",
+  "coat": "route",
+  "skin": "skin-4",
+  "met": true
+ },
+ {
+  "name": "Tomás",
+  "group": "Families",
+  "style": "captain",
+  "hat": "stripe",
+  "coat": "stripe",
+  "skin": "skin-3",
+  "met": false
+ },
+ {
+  "name": "Priya",
+  "group": "Families",
+  "style": "souwester",
+  "hat": "success",
+  "coat": "route",
+  "skin": "skin-2",
+  "met": true
+ },
+ {
+  "name": "Captain Rowe",
+  "group": "Sailors",
+  "style": "captain",
+  "hat": "roof",
+  "coat": "roof",
+  "skin": "skin-2",
+  "met": true
+ },
+ {
+  "name": "Skipper Ada",
+  "group": "Sailors",
+  "style": "captain",
+  "hat": "route",
+  "coat": "sea-light",
+  "skin": "skin-1",
+  "met": false
+ },
+ {
+  "name": "Nils",
+  "group": "Sailors",
+  "style": "beanie",
+  "hat": "lamp",
+  "coat": "hull",
+  "skin": "skin-1",
+  "met": true
+ },
+ {
+  "name": "Mei",
+  "group": "Sailors",
+  "style": "souwester",
+  "hat": "stripe",
+  "coat": "lamp",
+  "skin": "skin-2",
+  "met": false
+ }
+]

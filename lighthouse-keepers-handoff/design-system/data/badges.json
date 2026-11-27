@@ -1,0 +1,182 @@
+[
+ {
+  "id": "firstLight",
+  "name": "First Light",
+  "group": "Light",
+  "icon": "starTopper",
+  "goal": 1,
+  "have": 1,
+  "tier": "gold",
+  "text": "Make your first steady beam."
+ },
+ {
+  "id": "steadyHand",
+  "name": "Steady Hand",
+  "group": "Light",
+  "icon": "lantern",
+  "goal": 25,
+  "have": 25,
+  "tier": "silver",
+  "text": "25 steady beams."
+ },
+ {
+  "id": "lighthouseHeart",
+  "name": "Heart of the Lighthouse",
+  "group": "Light",
+  "icon": "lantern",
+  "goal": 100,
+  "have": 41,
+  "tier": "gold",
+  "text": "100 steady beams."
+ },
+ {
+  "id": "flareMaker",
+  "name": "Flare Maker",
+  "group": "Light",
+  "icon": "star",
+  "goal": 10,
+  "have": 6,
+  "tier": "silver",
+  "text": "Light the whole bay 10 times."
+ },
+ {
+  "id": "firstRescue",
+  "name": "Welcome Home",
+  "group": "Rescue",
+  "icon": "row",
+  "goal": 1,
+  "have": 1,
+  "tier": "bronze",
+  "text": "Bring your first boat home."
+ },
+ {
+  "id": "harbourFull",
+  "name": "Full Harbour",
+  "group": "Rescue",
+  "icon": "fish",
+  "goal": 100,
+  "have": 100,
+  "tier": "silver",
+  "text": "100 passengers home."
+ },
+ {
+  "id": "thousand",
+  "name": "Thousand Lights",
+  "group": "Rescue",
+  "icon": "sail",
+  "goal": 1000,
+  "have": 312,
+  "tier": "gold",
+  "text": "1,000 passengers home."
+ },
+ {
+  "id": "stormChaser",
+  "name": "Storm Chaser",
+  "group": "Rescue",
+  "icon": "storm",
+  "goal": 5,
+  "have": 2,
+  "tier": "gold",
+  "text": "Bring the Storm Ship home 5 times."
+ },
+ {
+  "id": "rockSpotter",
+  "name": "Rock Spotter",
+  "group": "Explorer",
+  "icon": "rock",
+  "goal": 25,
+  "have": 25,
+  "tier": "bronze",
+  "text": "Reveal 25 hidden rocks."
+ },
+ {
+  "id": "whaleWatcher",
+  "name": "Whale Watcher",
+  "group": "Explorer",
+  "icon": "whale",
+  "goal": 3,
+  "have": 1,
+  "tier": "silver",
+  "text": "See the friendly whale 3 times."
+ },
+ {
+  "id": "chartMaker",
+  "name": "Chart Maker",
+  "group": "Explorer",
+  "icon": "signpost",
+  "goal": 4,
+  "have": 2,
+  "tier": "gold",
+  "text": "Finish all 4 regions of the Bay Chart."
+ },
+ {
+  "id": "archSailor",
+  "name": "Through the Arch",
+  "group": "Explorer",
+  "icon": "sail",
+  "goal": 1,
+  "have": 0,
+  "tier": "silver",
+  "text": "Sail a boat through Arch Rock."
+ },
+ {
+  "id": "teamNight",
+  "name": "Team Night",
+  "group": "Together",
+  "icon": "bench",
+  "goal": 1,
+  "have": 1,
+  "tier": "bronze",
+  "text": "Finish your first night together."
+ },
+ {
+  "id": "tenNights",
+  "name": "Ten Nights",
+  "group": "Together",
+  "icon": "lanternRow",
+  "goal": 10,
+  "have": 10,
+  "tier": "silver",
+  "text": "Play 10 nights together (any days!)."
+ },
+ {
+  "id": "pilotPro",
+  "name": "Pilot's Pride",
+  "group": "Together",
+  "icon": "anchor",
+  "goal": 50,
+  "have": 33,
+  "tier": "silver",
+  "text": "50 routes drawn that brought boats home."
+ },
+ {
+  "id": "decorator",
+  "name": "Home Sweet Home",
+  "group": "Keeper",
+  "icon": "flag",
+  "goal": 10,
+  "have": 7,
+  "tier": "bronze",
+  "text": "Put 10 decorations on your lighthouse."
+ },
+ {
+  "id": "collector",
+  "name": "Collector",
+  "group": "Keeper",
+  "icon": "crown",
+  "goal": 40,
+  "have": 18,
+  "tier": "gold",
+  "text": "Own 40 different decorations."
+ },
+ {
+  "id": "friends",
+  "name": "Island Friends",
+  "group": "Keeper",
+  "icon": "puffin",
+  "goal": 4,
+  "have": 2,
+  "tier": "silver",
+  "text": "Adopt 4 different friends."
+ }
+]

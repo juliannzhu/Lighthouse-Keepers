@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../lk-kit.css">
+<script src="../lk-kit.js"></script>
+
+<meta charset="utf-8">
+<title>Decoration catalog</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-read); }
+  .wrap { padding: var(--space-4); }
+  h2 { font-family: var(--font-pixel); font-weight: 600; font-size: 22px; line-height: 28px; margin: var(--space-4) 0 var(--space-2); }
+  h2 small { font-family: var(--font-read); font-weight: 400; font-size: 14px; color: var(--ink-muted); margin-left: var(--space-2); }
+  .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--space-2); }
+  .it { background: var(--surface-raised); border: 1px solid var(--border); padding: 6px; text-align: center; position: relative; }
+  .it canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+  .n { font-family: var(--font-pixel); font-size: 14px; line-height: 18px; margin-top: 4px; }
+  .pr { font-size: 12px; color: var(--ink-muted); }
+  .tag { position: absolute; top: 4px; right: 4px; font-family: var(--font-pixel); font-size: 11px; padding: 0 4px; background: var(--accent); color: var(--on-accent); }
+  .intro { font-size: 14px; line-height: 20px; color: var(--ink-muted); margin: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="intro">Prices are in sea stars (a typical night earns 12–20). Spot = where on the lighthouse it goes; each spot holds one thing at a time. "Rare" items are the big saves; seasonal items only appear in the shop in their season.</p>
+  <div id="out"></div>
+</div>
+<script>
+  var SLOTN = {}; LK.DATA.slots.forEach(function (s) { SLOTN[s.id] = s.name; });
+  function draw() {
+    var out = document.getElementById('out'); out.innerHTML = '';
+    LK.DATA.categories.forEach(function (c) {
+      var items = LK.DATA.decorations.filter(function (d) { return d.category === c.id; });
+      var h = document.createElement('h2'); h.innerHTML = c.name + ' <small>' + items.length + ' items</small>'; out.appendChild(h);
+      var g = document.createElement('div'); g.className = 'grid'; out.appendChild(g);
+      items.forEach(function (d) {
+        var el = document.createElement('div'); el.className = 'it';
+        var cv = LK.spriteCanvas(20, 18, 1, function (ctx, p) { LK.itemTile(ctx, p, d.id, 20, 18); }, 'surface');
+        cv.style.width = '100%'; cv.style.height = 'auto'; el.appendChild(cv);
+        var n = document.createElement('div'); n.className = 'n'; n.textContent = d.name; el.appendChild(n);
+        var pr = document.createElement('div'); pr.className = 'pr';
+        pr.textContent = (d.price ? d.price + ' stars' : 'Free') + ' · ' + d.slots.map(function (s) { return SLOTN[s]; }).join(' / ').replace('Garden (left) / Garden (right)', 'Garden');
+        el.appendChild(pr);
+        if (d.tag || d.season) { var t = document.createElement('span'); t.className = 'tag'; t.textContent = d.season ? d.season : d.tag; el.appendChild(t); }
+        g.appendChild(el);
+      });
+    });
+  }
+  LK.ready(draw); LK.onTheme(draw);
+</script>
+</body>
+</html>

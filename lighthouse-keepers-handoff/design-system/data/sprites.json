@@ -1,0 +1,641 @@
+{
+ "row": [
+  "....e....",
+  "...ere...",
+  "ohhhhhhho",
+  ".oHHHHHo.",
+  "..ooooo.."
+ ],
+ "sail": [
+  ".....o.....",
+  ".....os....",
+  ".....oss...",
+  ".....osss..",
+  ".....ossss.",
+  "..e..osssss",
+  ".ere.o.....",
+  "ohhhhhhhhho",
+  ".oHHHHHHHo.",
+  "..ooooooo.."
+ ],
+ "fish": [
+  "....o.......",
+  "....o.......",
+  "...owwwo....",
+  "...owlwo.e..",
+  "ohhhhhhhhhho",
+  "ohhhhhhhhhho",
+  ".oHHHHHHHHo.",
+  "..oooooooo.."
+ ],
+ "storm": [
+  ".........o..................",
+  ".........o..................",
+  "........ooo........oo.......",
+  ".......owwwo......orro......",
+  ".......owlwo......orro......",
+  "..oooooooooooooooooooooooo..",
+  "..owlwwlwwlwwlwwlwwlwwlwwo..",
+  "..owwwwwwwwwwwwwwwwwwwwwwo..",
+  "ohhhhhhhhhhhhhhhhhhhhhhhhhho",
+  "ohhhhhhhhhhhhhhhhhhhhhhhhhho",
+  ".oHHHHHHHHHHHHHHHHHHHHHHHHo.",
+  "..oHHHHHHHHHHHHHHHHHHHHHHo..",
+  "...oooooooooooooooooooooo..."
+ ],
+ "rock": [
+  "...oo...",
+  "..oCco..",
+  ".oCCcco.",
+  "oCCcccco"
+ ],
+ "flag": [
+  "o.......",
+  "orrrrr..",
+  "orrrrrr.",
+  "orrrrr..",
+  "o.......",
+  "o.......",
+  "o.......",
+  "oo......"
+ ],
+ "pot": [
+  ".y...r.",
+  "yly.rlr",
+  ".yg.gr.",
+  "..ggg..",
+  "ohhhhho",
+  ".ohhho.",
+  "..ooo.."
+ ],
+ "gull": [
+  "ss.....ss",
+  ".ss...ss.",
+  "...sos...",
+  "....s...."
+ ],
+ "crab": [
+  "r.r...r.r",
+  ".r.....r.",
+  "..rrrrr..",
+  ".rroroor.",
+  "r.r...r.r"
+ ],
+ "lantern": [
+  "...o...",
+  "..ooo..",
+  ".olllo.",
+  "olbbblo",
+  ".olllo.",
+  "..ooo.."
+ ],
+ "bunting": [
+  "ooooooooooooooooo",
+  ".rrr.sss.lll.rrr.",
+  "..r...s...l...r.."
+ ],
+ "star": [
+  "...y...",
+  "...y...",
+  ".yyyyy.",
+  "..yby..",
+  ".y...y."
+ ],
+ "pennant": [
+  "o........",
+  "oqqqqqqq.",
+  "oqqqqq...",
+  "oqqq.....",
+  "o........",
+  "o........",
+  "o........",
+  "oo......."
+ ],
+ "weathervane": [
+  "....o....",
+  "..ooooo.o",
+  ".oCCCCCoo",
+  "oCiCCCCCo",
+  ".oCCCCCoo",
+  "..ooooo.o",
+  "....o....",
+  "...ooo...",
+  "....o...."
+ ],
+ "starTopper": [
+  "...l...",
+  "..lSl..",
+  "lllSlll",
+  ".llSll.",
+  "..lll..",
+  ".ll.ll.",
+  "...o...",
+  "...o..."
+ ],
+ "bell": [
+  "...o...",
+  "..ooo..",
+  ".olllo.",
+  ".olllo.",
+  "olllllo",
+  "ooooooo",
+  "...l..."
+ ],
+ "windsock": [
+  "o.........",
+  "orrwwrrw..",
+  "orrwwrrww.",
+  "orrwwrr...",
+  "o.........",
+  "o.........",
+  "oo........"
+ ],
+ "crown": [
+  "l...l...l",
+  "ll.lll.ll",
+  "lllllllll",
+  "lrllqllrl",
+  "lllllllll"
+ ],
+ "stringLights": [
+  "oo.....ooo.....oo",
+  "..ooooo...ooooo..",
+  "..l..q..u..l..q.."
+ ],
+ "lanternRow": [
+  "ooooooooooooooooo",
+  ".o...o...o...o...",
+  "olo.olo.olo.olo..",
+  "olo.olo.olo.olo..",
+  ".o...o...o...o..."
+ ],
+ "paperLanterns": [
+  "ooooooooooooooooo",
+  "..o.....o.....o..",
+  ".rrr...qqq...uuu.",
+  ".rrr...qqq...uuu.",
+  "..r.....q.....u.."
+ ],
+ "garland": [
+  "ggggggggggggggggg",
+  ".r.g.u.g.q.g.r.g.",
+  "..g...g...g...g.."
+ ],
+ "icicles": [
+  "fffffffffffffffff",
+  ".f.f..f.f..f.f..f",
+  ".f....f....f....."
+ ],
+ "wreath": [
+  ".ggg.",
+  "g...g",
+  "g...g",
+  ".grg.",
+  "..r.."
+ ],
+ "mat": [
+  "rrrrrr",
+  "rwrwrw"
+ ],
+ "doorLantern": [
+  ".o.",
+  "olo",
+  "olo",
+  ".o."
+ ],
+ "flowerArch": [
+  "..rgur..",
+  ".g....g.",
+  "r......u",
+  "g......g",
+  "g......g",
+  "g......g",
+  "g......g"
+ ],
+ "boots": [
+  "HH.HH",
+  "HH.HH",
+  "oo.oo"
+ ],
+ "curtains": [
+  "rrrr",
+  "r..r",
+  "r..r"
+ ],
+ "windowPlant": [
+  ".u.",
+  "ggg",
+  "hhh"
+ ],
+ "windowStar": [
+  ".l.",
+  "lll",
+  ".l."
+ ],
+ "sunflower": [
+  ".lll.",
+  "llhll",
+  ".lll.",
+  "..g..",
+  "gg.g.",
+  "..ggg",
+  "..g..",
+  "..g.."
+ ],
+ "bench": [
+  "hhhhhhhhh",
+  "HHHHHHHHH",
+  "hhhhhhhhh",
+  "H.......H",
+  "H.......H"
+ ],
+ "mailbox": [
+  ".ooo.",
+  "oqqqo",
+  "oqqqo",
+  "ooooo",
+  "..h..",
+  "..h..",
+  "..h..",
+  "..H.."
+ ],
+ "birdhouse": [
+  "..r..",
+  ".rrr.",
+  "rrrrr",
+  ".www.",
+  ".wow.",
+  ".www.",
+  "..h..",
+  "..h..",
+  "..H.."
+ ],
+ "telescope": [
+  "......oo",
+  "....oCCo",
+  "..oCCCo.",
+  ".oCCo...",
+  "...h....",
+  "..h.h...",
+  ".h...h.."
+ ],
+ "sandcastle": [
+  ".s.....s.",
+  "sss.r.sss",
+  "sssssssss",
+  "shssossss",
+  "sssooosss",
+  "hhhhhhhhh"
+ ],
+ "tent": [
+  "....o....",
+  "...oro...",
+  "..orrro..",
+  ".orrorro.",
+  "orrooorro",
+  "ooooooooo"
+ ],
+ "snowman": [
+  "..kkk..",
+  ".kkkkk.",
+  "..www..",
+  ".wiwiw.",
+  "..wlw..",
+  ".wwwww.",
+  "wwwwwww",
+  ".wwwww.",
+  "wwwwwww",
+  ".wwwww."
+ ],
+ "pumpkin": [
+  "...g...",
+  ".lllll.",
+  "lllllll",
+  "lhllhll",
+  ".lllll."
+ ],
+ "picnic": [
+  "rwrwrwrwr",
+  "wrwrwrwrw",
+  "rwrwrwrwr"
+ ],
+ "birdbath": [
+  "oaaaaao",
+  ".ooooo.",
+  "...C...",
+  "...C...",
+  "..CCC..",
+  ".ooooo."
+ ],
+ "signpost": [
+  "ooooo..",
+  "ohhhhho",
+  "ooooo..",
+  "..h....",
+  "..h....",
+  "..h....",
+  "..H...."
+ ],
+ "gnome": [
+  "..r..",
+  ".rrr.",
+  "rrrrr",
+  ".ppp.",
+  ".sss.",
+  "qqsqq",
+  ".qqq.",
+  ".H.H."
+ ],
+ "shells": [
+  "..l...",
+  ".sls.r",
+  "ssssrr"
+ ],
+ "sapling": [
+  "..g..",
+  ".gdg.",
+  "..g..",
+  ".gdg.",
+  "ggdgg",
+  "..h.."
+ ],
+ "cat": [
+  "o...o..",
+  "oCoCo..",
+  "CiCiC..",
+  ".CCC..o",
+  ".CCCC.C",
+  ".CCCCCo",
+  ".C.C..."
+ ],
+ "dog": [
+  "oo......",
+  "hho.....",
+  "hihhh...",
+  ".hhhhhhh",
+  "..hhhhh.",
+  "..h.h.h."
+ ],
+ "puffin": [
+  ".ooo.",
+  "owiwo",
+  "owwrl",
+  "ooww.",
+  "ooww.",
+  ".ow..",
+  ".ll.."
+ ],
+ "sealPup": [
+  ".CCC....",
+  "CiCCC...",
+  ".CCCCCCo",
+  "..oo.oo."
+ ],
+ "turtle": [
+  "..uuuu...",
+  ".uggugu..",
+  "uguuuguoo",
+  ".oo..oo.."
+ ],
+ "otter": [
+  ".hh....",
+  "hihh...",
+  ".hhhh..",
+  ".hshhh.",
+  "..hhhhh",
+  "..h..h."
+ ],
+ "goose": [
+  ".oo...",
+  "owo...",
+  ".o....",
+  ".o....",
+  ".hhhh.",
+  "hhhhhhh",
+  ".hhhh..",
+  "..o.o.."
+ ],
+ "trap": [
+  "ooooooo",
+  "oh.h.ho",
+  "ohhhhho",
+  "oh.h.ho",
+  "ooooooo"
+ ],
+ "lifeRing": [
+  ".rwr.",
+  "w...w",
+  "r...r",
+  "w...w",
+  ".rwr."
+ ],
+ "anchor": [
+  "..C..",
+  ".C.C.",
+  "..C..",
+  "CCCCC",
+  "..C..",
+  "C.C.C",
+  ".CCC."
+ ],
+ "rod": [
+  "......o",
+  ".....o.",
+  "....o.t",
+  "...o..t",
+  "..o...t",
+  ".o....l",
+  "h......"
+ ],
+ "crates": [
+  "ooooo..",
+  "ohHho..",
+  "ooooooo",
+  "ohHhohH",
+  "ooooooo"
+ ],
+ "dockLantern": [
+  ".o.",
+  "olo",
+  "olo",
+  ".o.",
+  ".h.",
+  ".h.",
+  ".H."
+ ],
+ "kite": [
+  "...q...",
+  "..qqq..",
+  ".qqnqq.",
+  "qqnnnqq",
+  ".qqnqq.",
+  "..qqq..",
+  "...q...",
+  "....o..",
+  "...r...",
+  "....o.."
+ ],
+ "balloon": [
+  "..rrrrr..",
+  ".rwrwrwr.",
+  "rwrwrwrwr",
+  "rwrwrwrwr",
+  ".rwrwrwr.",
+  "..rwrwr..",
+  "...o.o...",
+  "...o.o...",
+  "...hhh...",
+  "...hhh..."
+ ],
+ "plane": [
+  "www....",
+  ".wwwwww",
+  "..www.."
+ ],
+ "fireflies": [
+  "l.......l",
+  ".........",
+  "...l.....",
+  ".......l.",
+  "l........",
+  "....l....",
+  ".l.....l."
+ ],
+ "buoy": [
+  "..o..",
+  ".oro.",
+  ".owo.",
+  ".oro.",
+  "orrro",
+  ".ooo."
+ ],
+ "driftwood": [
+  ".oooooooooo.",
+  "ohhHhhhhHhho",
+  ".oooooooooo."
+ ],
+ "jelly": [
+  ".ttt.",
+  "taaat",
+  "tatat",
+  ".a.a.",
+  "a.a.a"
+ ],
+ "floe": [
+  "..fffff..",
+  ".ffffftf.",
+  "oaaaaaaao"
+ ],
+ "traps": [
+  ".r.......r.",
+  "oro.....oro",
+  ".okkkkkkko."
+ ],
+ "rockCluster": [
+  "...oo.........",
+  "..oCco....oo..",
+  ".oCCcco..oCco.",
+  "oCCcccco.oCCco"
+ ],
+ "kelp": [
+  ".g...g....g...g.",
+  ".g..g.g...g..g..",
+  "g.g.g.g..g.g.g.g",
+  "g.g..g.g.g.g..g.",
+  ".gg..gg..gg..gg.",
+  "..g...g...g...g."
+ ],
+ "sandbar": [
+  "....ssssssssss......",
+  "..sshssssshsssssss..",
+  "tssssssssssssshsssst",
+  ".tttttttttttttttttt."
+ ],
+ "net": [
+  "r...r...r...r",
+  "tt.t.t.t.t.tt",
+  "t.t.t.t.t.t.t",
+  ".t.t.t.t.t.t.",
+  "t.t.t.t.t.t.t"
+ ],
+ "whale": [
+  "....t.t.............",
+  ".....t..............",
+  "...ooooooo..........",
+  "..oaaaaaaaoo......oo",
+  ".oaaiaaaaaaaoo...oao",
+  "oaaaaaaaaaaaaaoooao.",
+  "tttttttttttttttttttt"
+ ],
+ "current": [
+  "t...t...t...",
+  ".t...t...t..",
+  "..t...t...t.",
+  ".t...t...t..",
+  "t...t...t..."
+ ],
+ "wreck": [
+  "....o.......",
+  "...rro......",
+  "....o.......",
+  "..ooooooo...",
+  "....o.......",
+  "....o.......",
+  "..hhHhh.....",
+  "thhHHhhht...",
+  "tttttttttt.."
+ ],
+ "stack": [
+  "...oooo...",
+  "..oggggo..",
+  "..oCccco..",
+  ".oCCccco..",
+  ".oCcccco..",
+  ".oCCcccco.",
+  "..oCccco..",
+  ".oCCcccco.",
+  ".oCcccccco",
+  "oCCcccccco",
+  "tttttttttt"
+ ],
+ "iceberg": [
+  ".........oo..........",
+  "........offo.........",
+  ".......offffo........",
+  "......offftffo.......",
+  ".....offfffftfo......",
+  "....offfftfffffo.....",
+  "...offffffffftffo....",
+  "..offfffffffffffffo..",
+  "ttttttttttttttttttttt"
+ ],
+ "pine": [
+  "..g..",
+  ".gdg.",
+  "..g..",
+  ".gdg.",
+  "ggdgg",
+  "..h.."
+ ],
+ "seal": [
+  ".CCC....",
+  "CiCCC...",
+  ".CCCCCCo",
+  "..oo.oo."
+ ],
+ "cabin": [
+  "...rrrr...",
+  "..rrrrrr..",
+  ".rrrrrrrr.",
+  "..wwwwww..",
+  "..wlwwHw..",
+  "..wwwwHw.."
+ ],
+ "ruin": [
+  ".C...",
+  "oCo.C",
+  "oCooC",
+  "oCCCC",
+  "oCcCC"
+ ]
+}

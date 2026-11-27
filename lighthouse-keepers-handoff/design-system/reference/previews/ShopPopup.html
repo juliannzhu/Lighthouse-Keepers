@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../lk-kit.css">
+<script src="../lk-kit.js"></script>
+
+<meta charset="utf-8">
+<title>Shop popup</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-read); }
+  .stage { position: relative; width: 960px; height: 540px; overflow: hidden; }
+  .stage > canvas { width: 960px; height: 540px; image-rendering: pixelated; display: block; }
+  .hud { position: absolute; font-family: var(--font-pixel); }
+  .tl { top: var(--space-4); left: var(--space-4); display: flex; gap: var(--space-2); align-items: flex-start; }
+  .tide { font-size: 24px; line-height: 28px; font-weight: 600; padding: var(--space-2) var(--space-4); }
+  .rest { font-size: 16px; color: var(--ink-muted); }
+  .shopBtn { display: flex; align-items: center; gap: var(--space-2); font-size: 20px; padding: 6px 14px 10px; }
+  .shopBtn .cnt { display: flex; align-items: center; gap: 4px; font-size: 16px; background: var(--surface); color: var(--ink); padding: 0 6px; }
+  .shopBtn.sleep { background: var(--surface-raised); color: var(--ink-muted); cursor: default; }
+  .sleepNote { font-size: 16px; color: var(--ink); background: var(--surface-raised); margin: 6px 4px 0; padding: 2px 8px; border: 2px solid var(--border); }
+
+  .shop { position: absolute; inset: 0; background: var(--surface); display: none; flex-direction: column; font-family: var(--font-pixel); }
+  .shop.open { display: flex; }
+  .awning { height: 28px; image-rendering: pixelated; display: block; width: 960px; }
+  .bar { display: flex; align-items: center; gap: var(--space-4); padding: 4px var(--space-4) var(--space-2); }
+  .bar h1 { margin: 0; flex: 1; }
+  .purse { display: flex; align-items: center; gap: var(--space-2); font-size: 22px; padding: 4px 14px; }
+  .purse small { font-size: 14px; color: var(--ink-muted); }
+  .bar .lk-btn { font-size: 18px; padding: 4px 14px 8px; }
+  .main { flex: 1; display: grid; grid-template-columns: 150px 1fr 250px; gap: var(--space-2); padding: 0 var(--space-4) var(--space-4); min-height: 0; }
+  .cats { display: flex; flex-direction: column; gap: 4px; }
+  .cat { display: flex; align-items: center; gap: 6px; font-family: var(--font-pixel); font-size: 17px; padding: 3px 6px; border: 2px solid var(--border); background: var(--surface-raised); color: var(--ink); cursor: pointer; text-align: left; }
+  .cat canvas { image-rendering: pixelated; }
+  .cat.on { background: var(--accent); color: var(--on-accent); border-color: var(--outline); }
+  .grid { overflow-y: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); align-content: start; padding: 2px; }
+  .feat { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--space-2); padding: 4px 10px; border: 2px dashed var(--accent); font-size: 16px; }
+  .it { border: 2px solid var(--border); background: var(--surface-raised); padding: 6px; text-align: center; cursor: pointer; position: relative; color: var(--ink); font: inherit; }
+  .it.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .it canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+  .it .n { font-size: 15px; line-height: 18px; margin-top: 4px; }
+  .price { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 15px; }
+  .owned { color: var(--success); font-size: 14px; }
+  .short { opacity: .55; }
+  .tag { position: absolute; top: 3px; right: 3px; font-size: 11px; padding: 0 4px; background: var(--stripe); color: var(--tower); }
+  .preview { padding: var(--space-2); margin: var(--space-1); display: flex; flex-direction: column; gap: 6px; }
+  .preview canvas.try { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+  .preview h2 { margin: 0; font-size: 22px; line-height: 26px; }
+  .preview p { margin: 0; font-family: var(--font-read); font-size: 14px; line-height: 19px; color: var(--ink-muted); }
+  .preview .lk-btn { margin-top: auto; }
+  .toast { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 6px 16px; font-size: 18px; display: none; }
+  .controls { display: flex; gap: var(--space-4); padding: var(--space-4); font-size: 14px; align-items: center; }
+  button:focus-visible { outline: 4px solid var(--ink); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <canvas id="bg" aria-label="Harbour during a rest between tides"></canvas>
+  <div class="hud tl">
+    <div class="lk-panel tide">Rest<div class="rest">Tide 2 next</div></div>
+    <div>
+      <button class="lk-btn shopBtn" id="open"><span id="awnIcon"></span>Shop <span class="cnt"><span class="si"></span><span class="c">23</span></span></button>
+      <div class="sleepNote" id="sleepNote" hidden>Opens at the next rest</div>
+    </div>
+  </div>
+
+  <div class="shop" id="shop" role="dialog" aria-label="Sea Star Shop">
+    <canvas class="awning" id="awning" width="240" height="7"></canvas>
+    <div class="bar">
+      <h1 class="game-heading">Sea Star Shop</h1>
+      <div class="purse lk-panel"><span class="si"></span><span class="c">23</span><small>sea stars</small></div>
+      <button class="lk-btn secondary" id="close">Close ×</button>
+    </div>
+    <div class="main">
+      <div class="cats" id="cats"></div>
+      <div class="grid" id="grid"></div>
+      <div class="preview lk-panel" id="pv"></div>
+    </div>
+    <div class="toast lk-panel" id="toast">Added to your bag!</div>
+  </div>
+</div>
+<div class="controls">
+  <label><input type="checkbox" id="duringTide"> Show the HUD during a tide (shop button sleeps — the Keeper has no input in rounds)</label>
+</div>
+<script>
+  var D = {}; LK.DATA.decorations.forEach(function (d) { D[d.id] = d; });
+  var stars = 23, owned = { paintClassic: 1, flag: 1, bunting: 1, pot: 1, crab: 1 }, cat = 'friends', sel = 'puffin';
+  var CAT_ICON = { toppers: 'flag', lights: 'lanternRow', paint: null, garden: 'pot', friends: 'puffin', dock: 'anchor', sky: 'kite', seasonal: 'pumpkin' };
+  function starIcons() {
+    document.querySelectorAll('.si').forEach(function (el) { el.innerHTML = ''; el.appendChild(LK.spriteCanvas(7, 5, 3, function (ctx, p) { LK.drawSprite(ctx, LK.SPRITES.star, 0, 0, p); })); });
+    document.querySelectorAll('.c').forEach(function (el) { el.textContent = stars; });
+  }
+  function drawAwning() {
+    var cv = document.getElementById('awning'), ctx = cv.getContext('2d'), p = LK.pal();
+    for (var x = 0; x < 240; x++) {
+      var stripe = Math.floor(x / 8) % 2 === 0, scallop = 5 + (Math.abs((x % 8) - 3.5) < 2.5 ? 1 : 0);
+      for (var y = 0; y < 7; y++) { if (y > scallop) continue; LK.px(ctx, y === scallop ? p.outline : (stripe ? p.stripe : p.tower), x, y); }
+    }
+  }
+  function drawCats() {
+    var box = document.getElementById('cats'); box.innerHTML = '';
+    LK.DATA.categories.forEach(function (c) {
+      var b = document.createElement('button'); b.className = 'cat' + (c.id === cat ? ' on' : '');
+      var ic = LK.spriteCanvas(14, 12, 2, function (ctx, p) { if (CAT_ICON[c.id]) { var s = LK.SPRITES[CAT_ICON[c.id]], z = LK.spriteSize(s); LK.drawSprite(ctx, s, Math.floor((14 - z.w) / 2), Math.floor((12 - z.h) / 2), p); } else LK.itemTile(ctx, p, 'paintSpiral', 14, 12); });
+      b.appendChild(ic); b.appendChild(document.createTextNode(c.name));
+      b.onclick = function () { cat = c.id; sel = LK.DATA.decorations.filter(function (d) { return d.category === cat; })[0].id; render(); };
+      box.appendChild(b);
+    });
+  }
+  function drawGrid() {
+    var g = document.getElementById('grid'); g.innerHTML = '';
+    if (cat === 'friends') {
+      var f = document.createElement('div'); f.className = 'feat';
+      f.appendChild(LK.spriteCanvas(7, 5, 3, function (ctx, p) { LK.drawSprite(ctx, LK.SPRITES.star, 0, 0, p); }));
+      f.appendChild(document.createTextNode("Today's pick: Puffin — new in the shop!"));
+      g.appendChild(f);
+    }
+    LK.DATA.decorations.filter(function (d) { return d.category === cat; }).forEach(function (d) {
+      var b = document.createElement('button'); var have = owned[d.id], short = !have && d.price > stars;
+      b.className = 'it' + (d.id === sel ? ' sel' : '') + (short ? ' short' : '');
+      var cv = LK.spriteCanvas(20, 16, 1, function (ctx, p) { LK.itemTile(ctx, p, d.id, 20, 16); }, 'surface');
+      cv.style.width = '100%'; cv.style.height = 'auto'; b.appendChild(cv);
+      var n = document.createElement('div'); n.className = 'n'; n.textContent = d.name; b.appendChild(n);
+      var pr = document.createElement('div');
+      if (have) { pr.className = 'owned'; pr.textContent = '✓ In your bag'; }
+      else { pr.className = 'price'; pr.appendChild(LK.spriteCanvas(7, 5, 2, function (ctx, p) { LK.drawSprite(ctx, LK.SPRITES.star, 0, 0, p); })); pr.appendChild(document.createTextNode(d.price ? d.price : 'Free')); }
+      b.appendChild(pr);
+      if (d.tag || d.season) { var t = document.createElement('span'); t.className = 'tag'; t.textContent = (d.season || d.tag).toUpperCase(); b.appendChild(t); }
+      b.onclick = function () { sel = d.id; render(); };
+      g.appendChild(b);
+    });
+  }
+  function drawPreview() {
+    var d = D[sel], pv = document.getElementById('pv'); pv.innerHTML = '';
+    var trial = { topper: 'flag', gallery: 'bunting', gardenL: 'pot', pet: 'crab', tower: 'paintClassic' };
+    var slot = d.slots.length > 1 ? 'gardenR' : d.slots[0]; trial[slot] = d.id;
+    var cv = document.createElement('canvas'); cv.width = 84; cv.height = 72; cv.className = 'try';
+    var ctx = cv.getContext('2d'); LK.decoratedScene(ctx, LK.pal(), trial, {});
+    pv.appendChild(cv);
+    var h = document.createElement('h2'); h.textContent = d.name; pv.appendChild(h);
+    var p = document.createElement('p'); p.textContent = d.blurb + ' Goes on: ' + (d.slots.length > 1 ? 'the garden' : LK.DATA.slots.filter(function (s) { return s.id === d.slots[0]; })[0].name.toLowerCase()) + '.'; pv.appendChild(p);
+    var b = document.createElement('button'); b.className = 'lk-btn';
+    if (owned[d.id]) { b.textContent = 'In your bag'; b.className = 'lk-btn secondary'; b.disabled = true; }
+    else if (d.price > stars) { b.textContent = (d.price - stars) + ' more stars to go'; b.className = 'lk-btn secondary'; b.disabled = true; }
+    else { b.textContent = 'Buy for ' + d.price; b.onclick = function () { stars -= d.price; owned[d.id] = 1; toast(); render(); }; }
+    pv.appendChild(b);
+  }
+  function toast() { var t = document.getElementById('toast'); t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { t.style.display = 'none'; }, 1400); }
+  function render() { starIcons(); drawCats(); drawGrid(); drawPreview(); }
+  function drawHud() {
+    var tideOn = document.getElementById('duringTide').checked;
+    LK.harbour(document.getElementById('bg'), tideOn ? { attention: 0.65, steady: true, phase: 'tide' } : { phase: 'calm', attention: 0.25, route: false });
+    var o = document.getElementById('open'); o.classList.toggle('sleep', tideOn); o.disabled = tideOn;
+    document.getElementById('sleepNote').hidden = !tideOn;
+    document.querySelector('.tide').innerHTML = tideOn ? 'Tide 2' : 'Rest<div class="rest">Tide 2 next</div>';
+    var ai = document.getElementById('awnIcon'); ai.innerHTML = '';
+    ai.appendChild(LK.spriteCanvas(9, 8, 3, function (ctx, p) {
+      for (var x = 0; x < 9; x++) { LK.px(ctx, x % 2 ? p.tower : p.stripe, x, 0, 1, 3); }
+      LK.px(ctx, p.outline, 0, 3, 9, 1); LK.px(ctx, p.hull, 1, 4, 1, 4); LK.px(ctx, p.hull, 7, 4, 1, 4); LK.px(ctx, p.hull, 1, 7, 7, 1);
+    }));
+  }
+  document.getElementById('open').onclick = function () { document.getElementById('shop').classList.add('open'); };
+  document.getElementById('close').onclick = function () { document.getElementById('shop').classList.remove('open'); };
+  document.getElementById('duringTide').addEventListener('input', function () { document.getElementById('shop').classList.remove('open'); drawHud(); });
+  function draw() { drawHud(); drawAwning(); render(); document.getElementById('shop').classList.add('open'); }
+  LK.ready(draw); LK.onTheme(draw);
+</script>
+</body>
+</html>

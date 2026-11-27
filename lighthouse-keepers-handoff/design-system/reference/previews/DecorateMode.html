@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../lk-kit.css">
+<script src="../lk-kit.js"></script>
+
+<meta charset="utf-8">
+<title>Decorate mode</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-pixel); }
+  .screen { width: 960px; height: 640px; position: relative; overflow: hidden; background: var(--surface); }
+  .top { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); }
+  .top h1 { flex: 1; margin: 0; }
+  .stars { display: flex; align-items: center; gap: var(--space-2); font-size: 20px; padding: var(--space-1) var(--space-4); }
+  .lk-btn { font-size: 18px; padding: 4px 14px 8px; }
+  .body { display: grid; grid-template-columns: 504px 1fr; gap: var(--space-4); padding: 0 var(--space-4); }
+  #scene { image-rendering: pixelated; display: block; cursor: pointer; }
+  .hint { font-family: var(--font-read); font-size: 14px; color: var(--ink-muted); margin: var(--space-2) 0 0; }
+  .bag { padding: var(--space-2) var(--space-2) var(--space-2); margin: var(--space-1); height: 528px; display: flex; flex-direction: column; }
+  .bag h2 { font-size: 22px; line-height: 26px; margin: 0 0 var(--space-2); display: flex; justify-content: space-between; align-items: baseline; }
+  .bag h2 small { font-family: var(--font-read); font-size: 13px; font-weight: 400; color: var(--ink-muted); }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: var(--space-2); }
+  .tab { font-family: var(--font-pixel); font-size: 16px; line-height: 20px; padding: 2px 8px; border: 2px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .tab.on { background: var(--accent); color: var(--on-accent); border-color: var(--outline); }
+  .items { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); overflow-y: auto; padding: 2px; }
+  .it { border: 2px solid var(--border); background: var(--surface); padding: 6px; text-align: center; position: relative; }
+  .it.placed { border-color: var(--success); }
+  .it canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+  .it .n { font-size: 16px; line-height: 20px; margin: 4px 0; }
+  .it button { width: 100%; font-family: var(--font-pixel); font-size: 16px; line-height: 20px; padding: 4px; border: 2px solid var(--outline); cursor: pointer; background: var(--accent); color: var(--on-accent); }
+  .it.placed button { background: var(--surface-raised); color: var(--ink); }
+  .on-badge { position: absolute; top: 4px; left: 4px; font-size: 13px; padding: 0 4px; background: var(--success); color: var(--surface); }
+  .slotline { font-family: var(--font-read); font-size: 12px; color: var(--ink-muted); }
+  button:focus-visible { outline: 4px solid var(--ink); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="top">
+    <h1 class="game-heading">Decorate your lighthouse</h1>
+    <div class="stars lk-panel"><span id="starIcon"></span><span id="starCount">23</span></div>
+    <button class="lk-btn secondary" id="shopBtn">Shop</button>
+    <button class="lk-btn">Done</button>
+  </div>
+  <div class="body">
+    <div>
+      <canvas id="scene" width="84" height="72" style="width:504px;height:432px" aria-label="Your lighthouse with its decorations"></canvas>
+      <p class="hint" id="hint">Tap a + on the lighthouse to see what fits there, or pick something from your bag.</p>
+    </div>
+    <div class="bag lk-panel">
+      <h2>Your bag <small id="count"></small></h2>
+      <div class="tabs" id="tabs"></div>
+      <div class="items" id="items"></div>
+    </div>
+  </div>
+</div>
+<script>
+  var D = {}; LK.DATA.decorations.forEach(function (d) { D[d.id] = d; });
+  var SLOTN = {}; LK.DATA.slots.forEach(function (s) { SLOTN[s.id] = s.name; });
+  var owned = ['flag', 'bunting', 'pot', 'crab', 'lantern', 'gulls', 'bench', 'paintClassic', 'paintSpiral', 'wreath', 'puffin', 'lifeRing', 'kite', 'mailbox', 'sunflower', 'curtains', 'stringLights', 'cat']
+    .filter(function (id) { return D[id]; });
+  var placed = { topper: 'flag', gallery: 'bunting', gardenL: 'pot', pet: 'crab', tower: 'paintClassic' };
+  var tab = 'all', slotFilter = null;
+  function slotOf(id) { for (var s in placed) if (placed[s] === id) return s; return null; }
+  function putOn(id) {
+    var d = D[id], slot = d.slots[0];
+    if (d.slots.length > 1) slot = d.slots.filter(function (s) { return !placed[s]; })[0] || d.slots[0];
+    if (slotFilter && d.slots.indexOf(slotFilter) >= 0) slot = slotFilter;
+    placed[slot] = id;
+  }
+  function takeOff(id) { var s = slotOf(id); if (s) { if (s === 'tower') placed.tower = 'paintClassic'; else delete placed[s]; } }
+  function drawScene() {
+    var cv = document.getElementById('scene'), ctx = cv.getContext('2d'), p = LK.pal();
+    ctx.imageSmoothingEnabled = false; ctx.clearRect(0, 0, 84, 72);
+    LK.decoratedScene(ctx, p, placed, { markers: true, highlight: slotFilter });
+  }
+  function drawTabs() {
+    var t = document.getElementById('tabs'); t.innerHTML = '';
+    [{ id: 'all', name: 'All' }].concat(LK.DATA.categories).forEach(function (c) {
+      var has = c.id === 'all' || owned.some(function (id) { return D[id].category === c.id; });
+      if (!has) return;
+      var b = document.createElement('button'); b.className = 'tab' + (tab === c.id && !slotFilter ? ' on' : ''); b.textContent = c.name;
+      b.onclick = function () { tab = c.id; slotFilter = null; render(); }; t.appendChild(b);
+    });
+    if (slotFilter) { var f = document.createElement('button'); f.className = 'tab on'; f.textContent = SLOTN[slotFilter] + ' ×'; f.onclick = function () { slotFilter = null; render(); }; t.appendChild(f); }
+  }
+  function drawItems() {
+    var box = document.getElementById('items'); box.innerHTML = '';
+    var list = owned.filter(function (id) {
+      var d = D[id];
+      if (slotFilter) return d.slots.indexOf(slotFilter) >= 0;
+      return tab === 'all' || d.category === tab;
+    });
+    document.getElementById('count').textContent = owned.length + ' things · ' + Object.keys(placed).length + ' on';
+    list.forEach(function (id) {
+      var d = D[id], at = slotOf(id), el = document.createElement('div');
+      el.className = 'it' + (at ? ' placed' : '');
+      var cv = LK.spriteCanvas(20, 16, 1, function (ctx, p) { LK.itemTile(ctx, p, id, 20, 16); });
+      cv.style.width = '100%'; cv.style.height = 'auto'; el.appendChild(cv);
+      var n = document.createElement('div'); n.className = 'n'; n.textContent = d.name; el.appendChild(n);
+      var sl = document.createElement('div'); sl.className = 'slotline';
+      var target = d.slots.length > 1 ? 'Garden' : SLOTN[d.slots[0]];
+      var occupied = !at && d.slots.every(function (s) { return placed[s]; }) && !(slotFilter && !placed[slotFilter]);
+      sl.textContent = at ? 'On: ' + SLOTN[at] : (occupied ? 'Swaps with ' + D[placed[slotFilter || d.slots[0]]].name : 'Goes on: ' + target);
+      el.appendChild(sl);
+      var b = document.createElement('button');
+      var fixed = id === 'paintClassic' && at;
+      b.textContent = at ? (fixed ? 'On' : 'Take off') : (occupied ? 'Swap in' : 'Put on');
+      b.disabled = !!fixed;
+      b.onclick = function () { at ? takeOff(id) : putOn(id); render(); };
+      el.appendChild(b);
+      if (at) { var ob = document.createElement('span'); ob.className = 'on-badge'; ob.textContent = 'ON'; el.appendChild(ob); }
+      box.appendChild(el);
+    });
+  }
+  function render() { drawScene(); drawTabs(); drawItems(); }
+  document.getElementById('scene').addEventListener('click', function (e) {
+    var r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 84, y = (e.clientY - r.top) / r.height * 72;
+    var best = null, bd = 99;
+    LK.DATA.slots.forEach(function (s) {
+      var sx = 30 + s.ax, sy = 56 + s.ay - (s.anchor === 'bottom' ? 4 : 0);
+      var dd = Math.hypot(sx - x, sy - y); if (dd < bd) { bd = dd; best = s.id; }
+    });
+    if (best && bd < 12) { slotFilter = best; document.getElementById('hint').textContent = 'Showing things for: ' + SLOTN[best] + '. Tap × to see everything.'; render(); }
+  });
+  function draw() {
+    var si = document.getElementById('starIcon'); si.innerHTML = '';
+    si.appendChild(LK.spriteCanvas(7, 5, 4, function (ctx, p) { LK.drawSprite(ctx, LK.SPRITES.star, 0, 0, p); }));
+    render();
+  }
+  LK.ready(draw); LK.onTheme(draw);
+</script>
+</body>
+</html>

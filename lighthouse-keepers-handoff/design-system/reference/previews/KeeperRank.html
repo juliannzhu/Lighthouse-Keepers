@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../lk-kit.css">
+<script src="../lk-kit.js"></script>
+
+<meta charset="utf-8">
+<title>Keeper rank</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-pixel); }
+  .wrap { display: grid; grid-template-columns: 260px 1fr; gap: var(--space-6); padding: var(--space-4); }
+  canvas { image-rendering: pixelated; display: block; }
+  h1 { margin: 0 0 var(--space-2); }
+  .now { font-size: 20px; margin-bottom: 4px; }
+  .meter { display: flex; gap: 2px; margin: 4px 0; }
+  .meter i { flex: 1; height: 12px; background: var(--border); }
+  .meter i.on { background: var(--lamp); }
+  .small { font-family: var(--font-read); font-size: 14px; color: var(--ink-muted); }
+  ol { list-style: none; padding: 0; margin: var(--space-4) 0 0; display: grid; gap: 4px; }
+  li { display: grid; grid-template-columns: 32px 1fr 90px 1.3fr; gap: var(--space-2); align-items: center; padding: 6px 10px; border: 2px solid var(--border); background: var(--surface-raised); font-size: 17px; }
+  li.done { border-color: var(--success); }
+  li.cur { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  li .pts { font-size: 14px; color: var(--ink-muted); }
+  li .un { font-family: var(--font-read); font-size: 13px; color: var(--ink-muted); }
+  li .num { font-size: 20px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="tower"></div>
+  <div>
+    <h1 class="game-heading">Keeper Rank</h1>
+    <div class="now" id="now"></div>
+    <div class="meter" id="meter"></div>
+    <div class="small" id="earn"></div>
+    <ol id="ranks"></ol>
+  </div>
+</div>
+<script>
+  function draw() {
+    var R = LK.DATA.ranks, pts = LK.DATA.lampLight.current, cur = R.filter(function (r) { return pts >= r.need; }).pop(), next = R[cur.n] || null;
+    document.getElementById('now').textContent = 'You are a ' + cur.name + ' · ' + pts + ' lamp light';
+    var m = document.getElementById('meter'); m.innerHTML = '';
+    var frac = next ? (pts - cur.need) / (next.need - cur.need) : 1;
+    for (var i = 0; i < 20; i++) { var s = document.createElement('i'); if (i < Math.round(frac * 20)) s.className = 'on'; m.appendChild(s); }
+    document.getElementById('earn').textContent = (next ? (next.need - pts) + ' more to ' + next.name + '. ' : '') + 'Earn lamp light: ' + LK.DATA.lampLight.earn + '. Points never go down.';
+    var ol = document.getElementById('ranks'); ol.innerHTML = '';
+    R.forEach(function (r) {
+      var li = document.createElement('li'); li.className = r.n < cur.n ? 'done' : (r.n === cur.n ? 'cur' : '');
+      li.innerHTML = '<span class="num"></span><span></span><span class="pts"></span><span class="un"></span>';
+      li.children[0].textContent = r.n; li.children[1].textContent = r.name;
+      li.children[2].textContent = r.need + ' light'; li.children[3].textContent = (r.n <= cur.n ? 'Unlocked: ' : 'Unlocks: ') + r.unlock;
+      ol.appendChild(li);
+    });
+    // the rank tower: one lit floor per rank reached
+    var t = document.getElementById('tower'); t.innerHTML = '';
+    t.appendChild(LK.spriteCanvas(52, 104, 5, function (ctx, p) {
+      for (var y = 0; y < 104; y++) { ctx.fillStyle = y < 90 ? (y < 45 ? p['sky-deep'] : p.sky) : p.sea; ctx.fillRect(0, y, 52, 1); }
+      var bx = 26, by = 92, floorH = 11;
+      LK.island(ctx, p, bx, by);
+      for (var f = 0; f < 6; f++) {
+        var y0 = by - (f + 1) * floorH, hw = 9 - Math.round(f * 0.6), lit = f < cur.n;
+        LK.px(ctx, p.outline, bx - hw - 1, y0, hw * 2 + 2, floorH);
+        LK.px(ctx, f % 2 ? p.stripe : p.tower, bx - hw, y0 + 1, hw * 2, floorH - 1);
+        LK.px(ctx, LK.mix(f % 2 ? p.stripe : p.tower, p.outline, 0.28), bx + Math.round(hw * 0.3), y0 + 1, hw - Math.round(hw * 0.3), floorH - 1);
+        LK.px(ctx, p.outline, bx - 2, y0 + 3, 4, 5);
+        LK.px(ctx, lit ? p.lamp : p['sea-deep'], bx - 1, y0 + 4, 2, 3);
+        if (f === cur.n - 1) { LK.px(ctx, p['beam-core'], bx - 1, y0 + 4, 1, 1); }
+      }
+      var top = by - 6 * floorH;
+      LK.px(ctx, p.outline, bx - 7, top - 1, 14, 1); LK.px(ctx, p.outline, bx - 4, top - 7, 8, 6);
+      LK.px(ctx, cur.n >= 6 ? p['beam-core'] : LK.mix(p.lamp, p.outline, 0.3), bx - 3, top - 6, 6, 4);
+      LK.px(ctx, p.roof, bx - 5, top - 9, 10, 2); LK.px(ctx, p.roof, bx - 3, top - 11, 6, 2);
+      LK.avatar(ctx, bx + 9, by - cur.n * floorH - 7, p, { style: 'captain', hat: 'roof' });
+    }));
+  }
+  LK.ready(draw); LK.onTheme(draw);
+</script>
+</body>
+</html>

@@ -82,6 +82,6 @@ Lighthouse Keepers turns attention training into a cooperative task in which a c
 
 ## Works Cited
 
-- Antle, Alissa N., et al. "Opening up the Design Space of Neurofeedback Brain-Computer Interfaces for Children." *ACM Transactions on Computer-Human Interaction*, vol. 24, no. 6, Jan. 2018, article 38, https://doi.org/10.1145/3131607.
-- Fullerton, Tracy. *Game Design Workshop: A Playcentric Approach to Creating Innovative Games*. 5th ed., CRC Press, 2024.
+- Antle, Alissa N., et al. "Opening up the Design Space of Neurofeedback Brain-Computer Interfaces for Children." ACM Transactions on Computer-Human Interaction, vol. 24, no. 6, Jan. 2018, article 38, https://doi.org/10.1145/3131607.
+- Fullerton, Tracy. Game Design Workshop: A Playcentric Approach to Creating Innovative Games. 5th ed., CRC Press, 2024.
 - Game Elements: Formal and Dramatic. Microsoft Excel file, summary table of Fullerton, chapters 3 and 4, 2026.

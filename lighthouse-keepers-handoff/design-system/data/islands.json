@@ -1,0 +1,443 @@
+[
+ {
+  "id": "pebble",
+  "name": "Pebble Islet",
+  "size": "small",
+  "w": 16,
+  "h": 10,
+  "top": "grass",
+  "cliff": 2,
+  "blobs": [
+   [
+    8,
+    4,
+    6,
+    3
+   ]
+  ],
+  "deco": [
+   [
+    "pine",
+    6,
+    -3
+   ]
+  ],
+  "role": "A single bump in the water. Good first-tide landmark."
+ },
+ {
+  "id": "sealRock",
+  "name": "Seal Rock",
+  "size": "small",
+  "w": 18,
+  "h": 10,
+  "top": "rock",
+  "cliff": 2,
+  "blobs": [
+   [
+    6,
+    5,
+    5,
+    3
+   ],
+   [
+    12,
+    4,
+    4,
+    2
+   ]
+  ],
+  "deco": [
+   [
+    "seal",
+    3,
+    -1
+   ],
+   [
+    "seal",
+    10,
+    -2
+   ]
+  ],
+  "role": "Bare rock with seals. Rescue Album special guests live here."
+ },
+ {
+  "id": "pineIslet",
+  "name": "Pine Islet",
+  "size": "small",
+  "w": 16,
+  "h": 14,
+  "top": "grass",
+  "cliff": 2,
+  "blobs": [
+   [
+    8,
+    8,
+    6,
+    3
+   ]
+  ],
+  "deco": [
+   [
+    "pine",
+    3,
+    0
+   ],
+   [
+    "pine",
+    8,
+    -2
+   ]
+  ],
+  "role": "Tiny and tall. Hides boats behind it from the beam."
+ },
+ {
+  "id": "crescent",
+  "name": "Crescent Isle",
+  "size": "medium",
+  "w": 30,
+  "h": 16,
+  "top": "grass",
+  "cliff": 3,
+  "blobs": [
+   [
+    15,
+    8,
+    13,
+    6
+   ]
+  ],
+  "holes": [
+   [
+    15,
+    11,
+    8,
+    5
+   ]
+  ],
+  "deco": [
+   [
+    "pine",
+    4,
+    0
+   ],
+   [
+    "pine",
+    23,
+    0
+   ]
+  ],
+  "role": "Its cove is a safe harbour: boats parked inside never drift."
+ },
+ {
+  "id": "twin",
+  "name": "Twin Isles",
+  "size": "medium",
+  "w": 34,
+  "h": 14,
+  "top": "grass",
+  "cliff": 3,
+  "blobs": [
+   [
+    8,
+    7,
+    7,
+    4
+   ],
+   [
+    26,
+    6,
+    7,
+    4
+   ]
+  ],
+  "deco": [
+   [
+    "pine",
+    4,
+    0
+   ],
+   [
+    "cabin",
+    21,
+    -2
+   ]
+  ],
+  "role": "A narrow channel between them is a shortcut, but only when lit."
+ },
+ {
+  "id": "spit",
+  "name": "Long Spit",
+  "size": "medium",
+  "w": 40,
+  "h": 8,
+  "top": "sand",
+  "cliff": 1,
+  "blobs": [
+   [
+    20,
+    4,
+    18,
+    2
+   ],
+   [
+    6,
+    4,
+    5,
+    3
+   ]
+  ],
+  "deco": [],
+  "role": "A long low sandbar that walls off half the bay."
+ },
+ {
+  "id": "birdCliff",
+  "name": "Gull Cliff",
+  "size": "medium",
+  "w": 26,
+  "h": 18,
+  "top": "grass",
+  "cliff": 6,
+  "blobs": [
+   [
+    13,
+    6,
+    10,
+    4
+   ]
+  ],
+  "deco": [
+   [
+    "gull",
+    4,
+    -8
+   ],
+   [
+    "gull",
+    15,
+    -10
+   ]
+  ],
+  "role": "Tall cliffs that cast a shadow: the beam can't reach water right behind it."
+ },
+ {
+  "id": "lagoon",
+  "name": "Horseshoe Lagoon",
+  "size": "large",
+  "w": 46,
+  "h": 24,
+  "top": "grass",
+  "cliff": 3,
+  "blobs": [
+   [
+    23,
+    11,
+    21,
+    9
+   ]
+  ],
+  "holes": [
+   [
+    23,
+    11,
+    14,
+    5
+   ],
+   [
+    23,
+    19,
+    6,
+    6
+   ]
+  ],
+  "deco": [
+   [
+    "pine",
+    4,
+    2
+   ],
+   [
+    "pine",
+    38,
+    2
+   ],
+   [
+    "pine",
+    20,
+    -3
+   ]
+  ],
+  "role": "A ring with one gap. Boats inside the lagoon are safe from currents."
+ },
+ {
+  "id": "arch",
+  "name": "Arch Rock",
+  "size": "large",
+  "w": 40,
+  "h": 22,
+  "top": "rock",
+  "cliff": 7,
+  "arch": [
+   20,
+   4,
+   3
+  ],
+  "blobs": [
+   [
+    20,
+    7,
+    18,
+    5
+   ]
+  ],
+  "deco": [
+   [
+    "gull",
+    30,
+    -6
+   ]
+  ],
+  "role": "Boats can sail through the arch — but only while the beam lights it."
+ },
+ {
+  "id": "forest",
+  "name": "Pine Forest Isle",
+  "size": "large",
+  "w": 44,
+  "h": 22,
+  "top": "grass",
+  "cliff": 3,
+  "blobs": [
+   [
+    16,
+    10,
+    14,
+    6
+   ],
+   [
+    30,
+    9,
+    12,
+    5
+   ]
+  ],
+  "deco": [
+   [
+    "pine",
+    6,
+    0
+   ],
+   [
+    "pine",
+    11,
+    -2
+   ],
+   [
+    "pine",
+    33,
+    -1
+   ],
+   [
+    "pine",
+    38,
+    1
+   ],
+   [
+    "cabin",
+    18,
+    -1
+   ]
+  ],
+  "role": "Big and cosy, with a cabin whose window lights when boats dock."
+ },
+ {
+  "id": "ruins",
+  "name": "Old Keeper's Ruins",
+  "size": "large",
+  "w": 38,
+  "h": 20,
+  "top": "grass",
+  "cliff": 4,
+  "blobs": [
+   [
+    19,
+    9,
+    16,
+    6
+   ]
+  ],
+  "deco": [
+   [
+    "ruin",
+    10,
+    -2
+   ],
+   [
+    "ruin",
+    22,
+    -1
+   ],
+   [
+    "pine",
+    30,
+    0
+   ]
+  ],
+  "role": "The ruins of the first lighthouse. Lighting them unlocks a Logbook badge."
+ },
+ {
+  "id": "turtle",
+  "name": "Turtle Island",
+  "size": "large",
+  "w": 44,
+  "h": 22,
+  "top": "grass",
+  "cliff": 3,
+  "turtle": true,
+  "blobs": [
+   [
+    22,
+    10,
+    13,
+    7
+   ],
+   [
+    38,
+    9,
+    4,
+    3
+   ],
+   [
+    12,
+    4,
+    4,
+    2
+   ],
+   [
+    12,
+    17,
+    4,
+    2
+   ],
+   [
+    32,
+    4,
+    4,
+    2
+   ],
+   [
+    32,
+    17,
+    4,
+    2
+   ],
+   [
+    6,
+    10,
+    3,
+    2
+   ]
+  ],
+  "deco": [],
+  "role": "Shaped like a sleeping turtle. Kids spot it straight away; a favourite chart landmark."
+ }
+]

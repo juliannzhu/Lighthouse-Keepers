@@ -1,0 +1,72 @@
+[
+ {
+  "id": "topper",
+  "name": "Roof top",
+  "ax": 0,
+  "ay": -47,
+  "anchor": "bottom"
+ },
+ {
+  "id": "gallery",
+  "name": "Balcony",
+  "ax": -8,
+  "ay": -34,
+  "anchor": "top-left"
+ },
+ {
+  "id": "tower",
+  "name": "Tower paint",
+  "ax": 0,
+  "ay": -20,
+  "anchor": "paint"
+ },
+ {
+  "id": "window",
+  "name": "Window",
+  "ax": -2,
+  "ay": -22,
+  "anchor": "top-left"
+ },
+ {
+  "id": "door",
+  "name": "Door",
+  "ax": 0,
+  "ay": 0,
+  "anchor": "door"
+ },
+ {
+  "id": "gardenL",
+  "name": "Garden (left)",
+  "ax": -10,
+  "ay": 1,
+  "anchor": "bottom"
+ },
+ {
+  "id": "gardenR",
+  "name": "Garden (right)",
+  "ax": 12,
+  "ay": 1,
+  "anchor": "bottom"
+ },
+ {
+  "id": "pet",
+  "name": "Friend",
+  "ax": 6,
+  "ay": 2,
+  "anchor": "bottom"
+ },
+ {
+  "id": "dock",
+  "name": "Dock",
+  "ax": 33,
+  "ay": 3,
+  "anchor": "bottom"
+ },
+ {
+  "id": "sky",
+  "name": "Sky",
+  "ax": 30,
+  "ay": -30,
+  "anchor": "bottom"
+ }
+]

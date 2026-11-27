@@ -1,0 +1,187 @@
+[
+ {
+  "id": "buoy",
+  "name": "Channel buoy",
+  "size": "small",
+  "tides": [
+   1,
+   2,
+   3
+  ],
+  "reveal": "always",
+  "moves": "bobs in place",
+  "effect": "Marks a safe lane. Boats steer around it; lit buoys glow so the Pilot can plan."
+ },
+ {
+  "id": "rock",
+  "name": "Hidden rock",
+  "size": "small",
+  "tides": [
+   1,
+   2,
+   3
+  ],
+  "reveal": "steady",
+  "effect": "Invisible until a steady beam finds it, then stays on the Bay Chart. A boat that bumps one stops and bobs for 2 s, then waits for a new route. Never sinks."
+ },
+ {
+  "id": "driftwood",
+  "name": "Driftwood log",
+  "size": "small",
+  "tides": [
+   1,
+   2
+  ],
+  "reveal": "always",
+  "moves": "drifts slowly across",
+  "effect": "Slow moving blocker. Teaches the Pilot to time routes."
+ },
+ {
+  "id": "jelly",
+  "name": "Jellyfish bloom",
+  "size": "small",
+  "tides": [
+   2
+  ],
+  "reveal": "always",
+  "moves": "pulses slowly",
+  "effect": "Boats go half speed through it. Soft crest-coloured glow, never brighter than the beam."
+ },
+ {
+  "id": "traps",
+  "name": "Lobster trap line",
+  "size": "small",
+  "tides": [
+   2
+  ],
+  "reveal": "always",
+  "effect": "Two floats and a rope. Routes may not cross the rope."
+ },
+ {
+  "id": "floe",
+  "name": "Ice floe",
+  "size": "small",
+  "tides": [
+   3
+  ],
+  "reveal": "always",
+  "moves": "drifts with the current",
+  "effect": "Small drifting blocker for the cold storm night."
+ },
+ {
+  "id": "rockCluster",
+  "name": "Rock cluster",
+  "size": "medium",
+  "tides": [
+   2,
+   3
+  ],
+  "reveal": "steady",
+  "effect": "Three hidden rocks close together. One steady beam reveals the whole cluster."
+ },
+ {
+  "id": "kelp",
+  "name": "Kelp bed",
+  "size": "medium",
+  "tides": [
+   2
+  ],
+  "reveal": "always",
+  "effect": "Boats move at half speed. Pilot dilemma: short slow route or long fast one."
+ },
+ {
+  "id": "sandbar",
+  "name": "Sandbar",
+  "size": "medium",
+  "tides": [
+   2
+  ],
+  "reveal": "always",
+  "moves": "appears at low tide, mid-round",
+  "effect": "Rises out of the water halfway through Tide 2 and blocks a lane until the tide turns."
+ },
+ {
+  "id": "net",
+  "name": "Fishing net",
+  "size": "medium",
+  "tides": [
+   2
+  ],
+  "reveal": "always",
+  "effect": "Floating net. Boats must go around."
+ },
+ {
+  "id": "whale",
+  "name": "Friendly whale",
+  "size": "medium",
+  "tides": [
+   2,
+   3
+  ],
+  "reveal": "always",
+  "moves": "surfaces, then dives",
+  "effect": "Surfaces for ~8 s and blocks a lane, then dives. A fun moment, not a threat. Counts toward the Rescue Album \"Special guests\"."
+ },
+ {
+  "id": "current",
+  "name": "Current",
+  "size": "medium",
+  "tides": [
+   3
+  ],
+  "reveal": "steady",
+  "effect": "Pushes boats sideways along the arrows. Only shown under a steady beam, so the Keeper helps the Pilot read the water."
+ },
+ {
+  "id": "wreck",
+  "name": "Old shipwreck",
+  "size": "medium",
+  "tides": [
+   3
+  ],
+  "reveal": "always",
+  "effect": "The mast shows; the hull under water is revealed by a steady beam. Explorer badge target."
+ },
+ {
+  "id": "stack",
+  "name": "Sea stack",
+  "size": "large",
+  "tides": [
+   3
+  ],
+  "reveal": "always",
+  "effect": "Tall rock pillar. Narrows the bay into channels."
+ },
+ {
+  "id": "whirlpool",
+  "name": "Whirlpool",
+  "size": "large",
+  "tides": [
+   3
+  ],
+  "reveal": "always",
+  "moves": "turns slowly",
+  "effect": "Boats routed through it spin once and come out where they started — lost time, never lost boats."
+ },
+ {
+  "id": "iceberg",
+  "name": "Iceberg",
+  "size": "large",
+  "tides": [
+   3
+  ],
+  "reveal": "steady",
+  "effect": "The tip is visible; its wide underwater shelf only shows under a steady beam. Routes over the shelf bump."
+ },
+ {
+  "id": "stormWave",
+  "name": "Storm swell",
+  "size": "large",
+  "tides": [
+   3
+  ],
+  "reveal": "always",
+  "moves": "rolls across every ~20 s",
+  "effect": "A slow swell crosses the bay before the Storm Ship. Boats in its path pause until it passes."
+ }
+]

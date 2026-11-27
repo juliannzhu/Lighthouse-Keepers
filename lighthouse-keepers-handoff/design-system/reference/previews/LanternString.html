@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../lk-kit.css">
+<script src="../lk-kit.js"></script>
+
+<meta charset="utf-8">
+<title>Lantern string</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-pixel); }
+  canvas { width: 960px; height: auto; image-rendering: pixelated; display: block; }
+  .row { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--space-6); padding: var(--space-4); }
+  h1 { margin: 0 0 4px; } .big { font-size: 20px; margin: 0 0 var(--space-2); }
+  p { font-family: var(--font-read); font-size: 14px; line-height: 20px; color: var(--ink-muted); margin: 0 0 var(--space-2); }
+  ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  li { padding: 6px 10px; border: 2px solid var(--border); background: var(--surface-raised); font-size: 17px; display: flex; justify-content: space-between; }
+  li.done { border-color: var(--success); } li small { font-family: var(--font-read); font-size: 13px; color: var(--ink-muted); }
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="A string of lanterns across the harbour, ten lit"></canvas>
+<div class="row">
+  <div>
+    <h1 class="game-heading">Lantern String</h1>
+    <p class="big" id="big"></p>
+    <p>One lantern for every night you finish together. Lanterns never go out: skipping a day, or a week, loses nothing. Every 7th lantern is a big festival lantern that throws a harbour festival at the next Dawn (fireworks-free: bunting, boats with lights, music).</p>
+    <p>Why not a streak? Streaks punish missed days, which turns practice back into pressure — the exact risk the design doc warns about.</p>
+  </div>
+  <ul id="fest"></ul>
+</div>
+<script>
+  var LIT = 10, TOTAL = 28;
+  function draw() {
+    var cv = document.getElementById('c');
+    LK.harbour(cv, { w: 240, h: 120, phase: 'calm', attention: 0.3, route: false, fogDensity: 0.4,
+      underlay: function () {} });
+    var ctx = cv.getContext('2d'), p = LK.pal();
+    // rope sagging between posts
+    var pts = [];
+    for (var x = 4; x < 236; x++) { var seg = (x - 4) / 232 * 4, f = seg - Math.floor(seg); pts.push([x, Math.round(8 + 7 * Math.sin(f * Math.PI))]); LK.px(ctx, p.outline, x, pts[pts.length - 1][1]); }
+    for (var i = 0; i < TOTAL; i++) {
+      var x0 = Math.round(10 + i * (220 / (TOTAL - 1))), y0 = pts[x0 - 4][1] + 1, lit = i < LIT, big = (i + 1) % 7 === 0;
+      var w = big ? 5 : 3, h = big ? 6 : 4;
+      LK.px(ctx, p.outline, x0 - Math.floor(w / 2) - 1, y0, w + 2, h + 2);
+      LK.px(ctx, lit ? (big ? p['beam-core'] : p.lamp) : p['sea-deep'], x0 - Math.floor(w / 2), y0 + 1, w, h);
+      if (lit) LK.px(ctx, LK.mix(p.lamp, p.sky, 0.5), x0 - Math.floor(w / 2) - 2, y0 + h + 2, w + 4, 1);
+    }
+    document.getElementById('big').textContent = LIT + ' lanterns lit · ' + (7 - LIT % 7) + ' more nights to the next festival';
+    var ul = document.getElementById('fest'); ul.innerHTML = '';
+    [[7, 'Harbour festival', '10 sea stars + Paper lanterns'], [14, 'Boat parade', '10 sea stars + Little rowboat'], [21, 'Night of a hundred lights', '15 sea stars + Golden lamp glow'], [28, 'Grand festival', '20 sea stars + Hot-air balloon']].forEach(function (f) {
+      var li = document.createElement('li'); li.className = LIT >= f[0] ? 'done' : '';
+      li.innerHTML = '<span></span><small></small>'; li.children[0].textContent = 'Lantern ' + f[0] + ': ' + f[1]; li.children[1].textContent = f[2];
+      ul.appendChild(li);
+    });
+  }
+  LK.ready(draw); LK.onTheme(draw);
+</script>
+</body>
+</html>

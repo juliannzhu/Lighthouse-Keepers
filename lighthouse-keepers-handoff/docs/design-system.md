@@ -50,6 +50,23 @@ Use the **banded** fog style by default (flat horizontal banks with a lighter to
 - Parent screens are not pixel art: `parent-heading`, `parent-body`, `parent-caption` on `surface-raised` cards with `radius-md`.
 - Focus ring: a solid `space-1` outline in `ink`, offset `space-2`.
 
+## Tides, obstacles and islands
+- Each tide adds one new idea: Tide 1 hidden rocks, Tide 2 slow zones and a rising sandbar, Tide 3 currents and an iceberg shelf that only a steady beam shows. Islands grow from small to large across the night.
+- Nothing sinks a boat. Bumping costs a 2-second bob and a new route.
+- Hidden obstacles appear only under a steady beam and then stay revealed. In fog, obstacles fade 55% toward `fog`.
+- Moving obstacles move slowly (about one boat-length every 2 s). Nothing darts.
+
+## Shop and decorating
+- The Shop button sits in the HUD's top-left next to the tide panel and shows the sea-star count. It sleeps during tides ("Opens at the next rest") because the Keeper has no input in rounds.
+- The Sea Star Shop is full screen: an awning in `stripe`/`tower`, the purse, category tabs, a 4-column item grid, and a try-it-on preview of the child's own lighthouse.
+- Decorate mode: one item per spot (roof top, balcony, tower paint, window, door, two garden spots, friend, dock, sky). Buttons read Put on, Swap in and Take off. Changes save instantly.
+- Never use red or "not enough" for prices. Say "4 more stars to go".
+
+## Rewards
+- Everything is cumulative. No streaks, no leaderboards, no random rewards, and no attention numbers on the child's screens.
+- Five options to choose from: Logbook badges, Keeper Rank, Bay Chart, Rescue Album, Lantern String.
+- Badge tiers use `hull` (bronze), `crest` (silver) and `lamp` (gold).
+
 ## Content fundamentals
 - Speak to the child as a teammate: "Together you brought 14 passengers home." Report team results only, compared with the family's own last night.
 - Guide lines are short, calm and physical: "Sit tall and keep your eyes on the light." Never "Focus!" or "Pay attention."
@@ -60,4 +77,4 @@ Use the **banded** fog style by default (flat horizontal banks with a lighter to
 All icons are pixel sprites from `design-system/reference/lk-kit.js` (`LK.SPRITES`): boats, rocks, decorations, sea stars. Draw new ones on the same grid with `outline` edges and palette tokens only. No icon font; no emoji.
 
 ## Using the kit
-`design-system/reference/lk-kit.js` defines `window.LK`: `LK.harbour(canvas, options)` draws the scene (`attention` 0–1, `steady`, `flare`, `frost`, `phase` of `lighting` | `calm` | `tide` | `storm` | `dawn`, `fog` of `bands` | `dither` | `clouds`, `lighthouse` of `classic` | `stubby` | `stone`); `LK.drawSprite`, `LK.avatar`, `LK.lighthouse` draw single sprites; `LK.pal(themeId)` returns a palette's colours. In Phaser, port the same sprite strings to a texture atlas and keep the palette as data.
+`design-system/reference/lk-kit.js` defines `window.LK`: `LK.harbour(canvas, options)` draws the scene (`attention` 0–1, `steady`, `flare`, `frost`, `phase` of `lighting` | `calm` | `tide` | `storm` | `dawn`, `fog` of `bands` | `dither` | `clouds`, `lighthouse` of `classic` | `stubby` | `stone`); `LK.drawSprite`, `LK.avatar`, `LK.lighthouse` draw single sprites; `LK.drawObstacle`, `LK.drawIsland`, `LK.decoratedScene`, `LK.itemTile`, `LK.badge` and `LK.bayChart` draw the progression pieces, and `LK.DATA` holds their catalogues; `LK.pal(themeId)` returns a palette's colours. In Phaser, port the same sprite strings to a texture atlas and keep the palette as data.

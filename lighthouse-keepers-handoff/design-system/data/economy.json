@@ -1,0 +1,57 @@
+{
+ "currency": "Sea stars",
+ "earn": [
+  {
+   "what": "Every 2 passengers brought home",
+   "stars": 1
+  },
+  {
+   "what": "Each steady beam",
+   "stars": 1
+  },
+  {
+   "what": "Each flare",
+   "stars": 3
+  },
+  {
+   "what": "Storm Ship brought home",
+   "stars": 5
+  },
+  {
+   "what": "First visit to a new island on the Bay Chart",
+   "stars": 2
+  },
+  {
+   "what": "Badge earned (Logbook)",
+   "stars": "5–20 by tier"
+  },
+  {
+   "what": "Every 7th lantern on the Lantern String",
+   "stars": 10
+  }
+ ],
+ "typicalNight": "12–20 sea stars (e.g. 14 passengers = 7, 6 steady beams = 6, 1 flare = 3)",
+ "priceBands": [
+  {
+   "band": "Small",
+   "range": "2–4"
+  },
+  {
+   "band": "Nice",
+   "range": "5–8"
+  },
+  {
+   "band": "Special",
+   "range": "9–12"
+  },
+  {
+   "band": "Rank rewards",
+   "range": "not for sale — unlocked by Keeper Rank"
+  }
+ ],
+ "rules": [
+  "Sea stars are never taken away.",
+  "Prices never change and there are no random boxes.",
+  "Shop opens only between tides and at Dawn — never during a tide."
+ ]
+}
