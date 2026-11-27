@@ -66,27 +66,37 @@ With the bridge running, open **http://localhost:8000/harbour**. Your attention 
 - A poor signal (noise above 50) frosts the lamp glass.
 - Below the scene: attention, meditation, noise and blink readings, a 120 s trend with the threshold line, the raw EEG, band power and CSV export.
 
-The scene is drawn by the design kit in `lighthouse-keepers-handoff/design-system/reference/lk-kit.js`.
+The scene is drawn by the design kit in `lighthouse-keepers-handoff/design-system/reference/lk-kit.js`. Defaults (palette, lighthouse, fog, threshold, hold time) are in the `CFG` object at the top of the script in `harbour.html`.
 
 ### Lighthouse Keepers game (one full night)
 
-Open **http://localhost:8000/game** for the playable session from the design document. It has only the game screen and the Pilot's controls bar, with no readings dashboard. It plays one night of about 12 minutes:
+The game is split across two pages so the Keeper sees only the game:
 
-| Stage | Palette | What happens | Pilot's keys |
+- **http://localhost:8000/game**: the Keeper's screen. Only the harbour and its four corner panels, filling the screen at a whole-number scale. Press **F** for browser full screen.
+- **http://localhost:8000/pilot**: the Harbour Pilot's (parent's) page. It has what to do at each stage, the keys, live stats and the attention graph, the settings and Start/Pause/Skip buttons. Open it in its own window or on another device. Don't open it as another tab in the game's window, because browsers pause hidden tabs. For a phone or tablet on the same Wi-Fi, start the bridge with `python3 bridge.py --lan` and open the address it prints.
+
+The two pages talk through the bridge (`POST /pilot/state` and `/pilot/cmd`, relayed on `/events`), so the bridge must be running, including in simulator play. One night lasts about 12 minutes:
+
+| Stage | Palette | What happens | Keys on the game screen |
 |---|---|---|---|
-| Lamp lighting | Harbour Night | The frost on the lamp clears as the headset signal settles. A setup card has the settings. | **Enter** starts the night |
+| Lamp lighting | Harbour Night | The frost on the lamp clears as the headset signal settles. Setup steps are on the Pilot page. | **Enter** starts the night |
 | Calm waters (1 min) | Sea Glass | No boats. The beam responds and the guide shows a calm, upright posture. | **Esc** pause |
-| Tides 1–3 (3 min each) | Sea Glass | Boats sail in from the right edge (one to three at a time, never none). Steer the marked boat to the dock; boats can't pass through each other. Boats move only in the light and stop in the dark. A steady beam reveals hidden rocks, and three steady beams make a flare. | **Arrow keys** steer, **Tab** next boat |
-| Rests (between tides) | Sea Glass | A parent card shows the last tide's attention graph, threshold, hold time, signal and high-contrast switch. Changes apply when the next tide starts. | **Enter** starts the next tide |
-| Storm ship (after tide 3) | Deep Fjord | A steady beam reveals channel buoys. Steer the big ship between them to the dock. | **Arrow keys**, **Tab** |
-| Dawn | Harbour Night | The remaining boats are towed in. The team summary is compared with last night, and sea stars buy lighthouse decorations. | — |
+| Tide 1 (3 min) | Sea Glass | Open water, mostly rowing boats, a clear starry sky. | **Arrow keys** steer, **Tab** next boat |
+| Tide 2 (3 min) | Sea Glass | Twin Isles in the middle and Pebble Islet below them (go above or below), more sail boats, a light drizzle. | as above |
+| Tide 3 (3 min) | Sea Glass | Pine Forest Isle and the Old Keeper's Ruins with a gap between them, mostly fishing boats, wind and whitecaps. A gentle current drifts lit boats down the bay, and a ferry with 10 passengers hides in the fog until the beam's bright core finds it. A steady beam on the ruins earns a badge. | as above |
+| Rests (between tides) | Sea Glass | The Pilot page shows how the tide went and the settings. Changes apply when the next tide starts. The Keeper can open the Shop, Decorate, Logbook and Rescue album. | **Enter** starts the next tide |
+| Storm ship (after tide 3) | Deep Fjord | A steady beam reveals channel buoys through the gap between the islands. Steer the big ship between them to the dock. | **Arrow keys**, **Tab** |
+| Dawn | Harbour Night | The sun rises slowly. The remaining boats (an unfound ferry too) are towed in. The team summary is compared with last night and shows the sea stars earned, new badges and new rescue album friends. Then the Keeper can shop, decorate, and look at the logbook and album. | **Enter** after Goodnight starts a new night |
 
+- In every tide, boats sail in from the right edge (one to three at a time, never none). Steer the marked boat to the dock. Boats can't pass through each other, move only in the light and stop in the dark. A steady beam reveals hidden rocks, and three steady beams make a flare. The moon crosses the sky over the three tides.
 - **N** skips to the next stage (for demos). **Esc** pauses.
-- With no headset data, **hold Space** to raise simulated attention and **F** to test the frosty lamp.
+- With no headset data, **hold Space** to raise simulated attention and **I** to test the frosty lamp.
 - The beam turns slowly toward the boat the Pilot has marked. Without this, the dock and most of the bay would never be lit.
 - The high-contrast setting (Storm Ink) replaces every stage's palette and is remembered.
-- Past nights' passengers, sea stars and decorations are saved in the browser's localStorage.
-- Stage palettes, timings, speeds and other values are in the `CFG` object at the top of `game.html`. Defaults (palette, lighthouse, fog, threshold, hold time) are in the `CFG` object at the top of the script in `harbour.html`.
+- **Sea stars** come from team results (`economy.json`): 1 per 2 passengers, 1 per steady beam, 3 per flare, 5 for the Storm Ship, plus 5/10/20 for each new badge. They are never taken away.
+- **Shop, Decorate, Logbook, Rescue album** (from the handoff's `ShopPopup`, `DecorateMode`, `Logbook` and `RescueAlbum` mockups): the Shop button sits next to the tide panel and shows the sea-star count. It sleeps during the night and wakes at rests and Dawn. The shop sells all 66 decorations in `decorations.json`, and decorations show on the lighthouse in the game. The logbook has 15 badges from `badges.json` plus Old Light; Whale Watcher, Chart Maker and Through the Arch are hidden until the game has a whale, a bay chart and Arch Rock. Every boat carries a named passenger from `passengers.json`, and their album sticker fills in the first time they come home. **Esc** closes a screen.
+- Past nights' passengers, sea stars, the bag, placed decorations, badge counters and met passengers are saved in the browser's localStorage (`lk.*`).
+- Stage palettes, timings, speeds, boat mixes, the current, sea-star rewards and other values are in the `CFG` object at the top of `game.html`. The bay layouts (which islands from `islands.json`, and where) are in `LAYOUTS`.
 
 ---
 
@@ -113,7 +123,8 @@ A web page can't read Bluetooth or serial ports directly, so `bridge.py` reads t
 | `bridge.py` | The bridge server: reads the headset and serves the page (standard library only) |
 | `index.html` | The dashboard (plain HTML + JavaScript, no frameworks) |
 | `harbour.html` | The Lighthouse Keepers harbour view driven by live attention |
-| `game.html` | The playable Lighthouse Keepers session (lamp lighting → tides → storm ship → dawn) |
+| `game.html` | The playable Lighthouse Keepers session, the Keeper's screen (lamp lighting → tides → storm ship → dawn) |
+| `pilot.html` | The Harbour Pilot (parent) page: instructions, stats, settings and controls for the game |
 | `rfcomm_reader.swift` | Source of the Bluetooth helper |
 | `rfcomm_reader` | Prebuilt helper (universal: Apple Silicon + Intel). If you delete it, `bridge.py` rebuilds it with `swiftc` (needs Xcode Command Line Tools: `xcode-select --install`) |
 
