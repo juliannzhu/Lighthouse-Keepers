@@ -93,9 +93,11 @@ const CFG = {
   boatSpeed: 10, stormSpeed: 7,          // art pixels per second
   minBoats: 1, maxBoats: 3,              // boats on the water during a tide
   spawnEvery: [20, 32], noSpawnLastSec: 25, arriveSpeed: 12,
-  passengers: { row: 2, sail: 4, fish: 6, storm: 20 },
-  // Each tide feels different: its own bay layout and boat mix.
+  passengers: { row: 2, sail: 4, fish: 6, ferry: 10, storm: 20 },
+  // Each tide feels different: its own bay layout, boat mix, and (tide 3) a current and a hidden ferry.
   boatMix: { 1: { row: 0.7, sail: 0.3 }, 2: { row: 0.3, sail: 0.5, fish: 0.2 }, 3: { row: 0.2, sail: 0.3, fish: 0.5 } },
+  currentTide: 3, current: { vx: 0, vy: 2.5 },   // art pixels per second; only lit boats drift
+  ferryTide: 3,
   litMin: 0.22,                          // light a boat needs to move (same as the kit's "in light")
   dockStaySec: 4,
   fadeSec: 1.5, dawnFadeSec: 6,           // palette dissolve between stages; the storm-to-dawn one is slow
@@ -188,7 +190,7 @@ function newNight() {
     dens: 0.72, hist: [], histT: 0, tideStats: null, pending: { threshold: CFG.threshold, holdSec: CFG.holdSec },
     highContrast: store.get('highContrast', false), guide: { text: '', until: 0 }, nextSpawn: 0,
     channelOnce: false, summaryShown: false, dawnPick: null, snap: null, transT0: 0, transDur: 1.5, sun: 0, stormAmt: 0, lastNow: null,
-    layout: 1,
+    layout: 1, curAmt: 0,
   };
   N = bakeNoise(1 + Math.floor(Math.random() * 900));
   makeNightRocks();
@@ -264,7 +266,7 @@ function setLayout(n) {
   makeNightRocks();
   // any boat now sitting on new land moves to the nearest open water
   for (const b of S.boats) {
-    if (b.state !== 'sea') continue;
+    if (b.state !== 'sea' && b.state !== 'hidden') continue;
     if (!onLand(b.x, b.y, b.w, b.h)) continue;
     outer: for (let r = 2; r < 60; r += 2) for (let a = 0; a < 16; a++) {
       const x = b.x + Math.cos(a * Math.PI / 8) * r, y = b.y + Math.sin(a * Math.PI / 8) * r;
@@ -286,6 +288,19 @@ function makeNightRocks() {
 // rock (x,y) is its 8×4 sprite's centre
 function rockHits(r, cx, cy, hw, hh) { return Math.abs(cx - r.x) < 4 + hw - 2 && Math.abs(cy + hh * 0.3 - r.y) < 5; }
 
+// the ferry is drawn on the kit's grid with the kit's colour roles
+const EXTRA_SPRITES = {
+  ferry: [
+    '.......o..........',
+    '......owo.........',
+    '...oooooooooooo...',
+    '...owlwwlwwlwwo...',
+    '...owwwwwwwwwwo...',
+    'ohhhhhhhhhhhhhhhho',
+    '.oHHHHHHHHHHHHHHo.',
+    '..oooooooooooooo..'],
+};
+const spriteOf = type => EXTRA_SPRITES[type] || LK.SPRITES[type];
 function pickType() {
   const mix = CFG.boatMix[S.tide] || CFG.boatMix[1];
   let r = Math.random();
@@ -293,7 +308,7 @@ function pickType() {
   return Object.keys(mix)[0];
 }
 function makeBoat(type, x, y) {
-  const sz = LK.spriteSize(LK.SPRITES[type]);
+  const sz = LK.spriteSize(spriteOf(type));
   return { type, x, y, w: sz.w, h: sz.h, passengers: CFG.passengers[type], state: 'sea', left: true,
     trail: [], pauseUntil: 0, status: 'ready', dockT: 0, slotX: 0, slotY: 0 };
 }
@@ -301,7 +316,7 @@ function makeBoat(type, x, y) {
 function spawnBoat() {
   for (let tries = 0; tries < 60; tries++) {
     const x = Math.round(rand(200, 224)), y = Math.round(rand(HZ + 12, 124));   // waiting spot near the right edge
-    if (activeBoats().some(b => (distTo(b.x, b.y, x, y) < 18 || (b.x > x - 12 && Math.abs(b.y - y) < 12)))) continue;  // spot and lane are clear
+    if (S.boats.some(b => ['sea', 'arriving', 'hidden'].includes(b.state) && (distTo(b.x, b.y, x, y) < 18 || (b.x > x - 12 && Math.abs(b.y - y) < 12)))) continue;  // spot and lane are clear
     if (S.rocks.some(r => distTo(r.x, r.y, x, y) < 14)) continue;
     const b = makeBoat(pickType(), x, y);
     if (onLand(x, y, b.w, b.h)) continue;
@@ -310,6 +325,18 @@ function spawnBoat() {
     return true;
   }
   return false;
+}
+// Tide 3 hides a ferry in the fog; only a steady beam (or a flare) finds it.
+function hideFerry() {
+  for (let tries = 0; tries < 80; tries++) {
+    const x = Math.round(rand(186, 222)), y = Math.round(rand(HZ + 14, 122));
+    const f = makeBoat('ferry', x, y);
+    if (onLand(x, y, f.w, f.h) || S.rocks.some(r => distTo(r.x, r.y, x, y) < 16)) continue;
+    if (S.boats.some(b => b.state !== 'docked' && distTo(b.x, b.y, x, y) < 22)) continue;
+    f.state = 'hidden';
+    S.boats.push(f);
+    return;
+  }
 }
 const seaBoats = () => S.boats.filter(b => b.state === 'sea');
 const activeBoats = () => S.boats.filter(b => b.state === 'sea' || b.state === 'arriving');
@@ -388,16 +415,19 @@ function setStage(stage) {
   if (stage === 'tide') {
     S.tide++;
     if (S.layout !== S.tide) setLayout(S.tide);
+    if (S.tide === CFG.ferryTide) hideFerry();
     CFG.threshold = S.pending.threshold; CFG.holdSec = S.pending.holdSec;
     S.beam.count = 0; S.hist = []; S.tideStats = { above: 0, total: 0, steady: 0, boats: 0 };
     while (activeBoats().length < Math.min(2, CFG.maxBoats) && spawnBoat());
     S.nextSpawn = S.T + rand(...CFG.spawnEvery);
-    say(S.tide === 1 ? 'Boats are coming! Keep the light steady to guide them home.' : `Tide ${S.tide}. More boats are on their way.`, 7);
+    say(S.tide === 1 ? 'Boats are coming! Keep the light steady to guide them home.'
+      : S.tide === CFG.ferryTide ? `Tide ${S.tide}. Something big is hiding in the fog. A steady beam might find it.`
+      : `Tide ${S.tide}. More boats are on their way.`, 7);
   }
   if (stage === 'rest') say('Rest time. Stretch your arms and take a slow breath.', 1e9);
   if (stage === 'storm') { startStorm(); say('A big ship is in the storm. Hold the light steady to find its channel.', 8); }
   if (stage === 'dawn') {
-    S.boats.forEach(b => { if (b.state === 'sea' || b.state === 'arriving') b.state = 'towing'; });
+    S.boats.forEach(b => { if (['sea', 'arriving', 'hidden'].includes(b.state)) b.state = 'towing'; });   // nothing is left behind, not even an unfound ferry
     say('The sun is coming up. The last boats are being towed home.', 8);
   }
   if (stage === 'end') say('Goodnight, keepers. See you tomorrow night.', 1e9);
@@ -524,8 +554,20 @@ function dockBoat(b, quiet) {
   if (!quiet && S.stage !== 'dawn') say(b.type === 'storm' ? 'The storm ship is home! Every passenger is safe.' : 'A boat is home!', 4);
   autoSelect();
 }
+const currentOn = () => S.stage === 'tide' && S.tide === CFG.currentTide;
+// a gentle current: lit boats drift slowly; it never bumps or pushes anything
+function drift(b, mx, my) {
+  const hw = b.w / 2, hh = b.h / 2;
+  const nx = clamp(b.x + mx, hw + 1, W - hw - 1), ny = clamp(b.y + my, HZ + 4 + hh, H - hh - 1);
+  if (onLand(nx, ny, b.w, b.h)) return;
+  if (S.rocks.some(r => rockHits(r, nx, ny, hw, hh) && !rockHits(r, b.x, b.y, hw, hh))) return;
+  if (activeBoats().some(o => o !== b && boatsTouch(b, nx, ny, o) && !boatsTouch(b, b.x, b.y, o))) return;
+  b.x = nx; b.y = ny;
+  if (inDock(b)) dockBoat(b);
+}
 function updateBoats(dt) {
   if (S.stage === 'tide' || S.stage === 'storm') steer(dt);
+  if (currentOn()) for (const b of seaBoats()) if (boatLit(b)) drift(b, CFG.current.vx * dt, CFG.current.vy * dt);
   for (const b of S.boats) {
     if (b.state === 'arriving') {
       const nx = Math.max(b.waitX, b.x - CFG.arriveSpeed * dt);
@@ -547,6 +589,10 @@ function updateBoats(dt) {
 function revealThings() {
   const showAll = S.beam.flare > 0.5, steady = S.beam.steady;
   for (const r of S.rocks) if (!r.revealed && (showAll || (steady && lit(r.x, r.y) > 0.25))) r.revealed = true;
+  for (const b of S.boats) if (b.state === 'hidden' && (showAll || (steady && lit(b.x, b.y) > 0.5))) {   // the ferry needs the beam's bright core
+    b.state = 'sea';
+    say(`You found a ferry in the fog! ${b.passengers} passengers are aboard.`, 6);
+  }
   for (const u of S.buoys) if (!u.revealed && (showAll || (steady && lit(u.x, u.y) > 0.25))) {
     u.revealed = true;
     if (!S.channelOnce) { S.channelOnce = true; say('You found the channel! Keep the light steady.', 5); }
@@ -609,13 +655,14 @@ function renderBackground(now) {
   S.dens += (L0.dens - S.dens) * ease(dt, L0.dawn ? CFG.sunriseSec : 1);
   S.stormAmt += ((L0.storm ? 1 : 0) - S.stormAmt) * ease(dt, L0.storm ? 1.5 : CFG.sunriseSec * 0.8);
   S.sun += ((L0.dawn ? 1 : 0) - S.sun) * ease(dt, CFG.sunriseSec);
-  const dens = S.dens, sun = S.sun, storm = S.stormAmt;
+  S.curAmt += ((currentOn() ? 1 : 0) - S.curAmt) * ease(dt, 2);
+  const dens = S.dens, sun = S.sun, storm = S.stormAmt, cur = S.curAmt;
   const night = [C['sky-deep'], C.sky], stormy = [mixRGB(C['sky-deep'], C.outline, 0.5), C['sky-deep']],
     dawnSky = [mixRGB(C.sky, C['sky-deep'], 0.4), mixRGB(C.sky, C.lamp, 0.5)];
   const skyTop = mixRGB(mixRGB(night[0], stormy[0], storm), dawnSky[0], sun), skyBot = mixRGB(mixRGB(night[1], stormy[1], storm), dawnSky[1], sun);
   const seaTop = mixRGB(C.sea, C.lamp, 0.18 * sun), sunX = W * 0.72, sunR = 10, sunY = HZ + (1 - sun) * (sunR + 3);
   const starTh = L0.starTh + (1 - L0.starTh) * sun * 0.9;
-  const crestOff = Math.floor(now * 1.2) % 490, rainOff = Math.floor(now * 9) % 880;
+  const crestOff = Math.floor(now * 1.2) % 490, rainOff = Math.floor(now * 9) % 880, curOff = Math.floor(now * CFG.current.vy * 2) % 900;
 
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x; Larr[i] = lit(x, y); Garr[i] = lit.gl || 0;
@@ -633,6 +680,10 @@ function renderBackground(now) {
       set(ts > b ? C['sea-deep'] : seaTop);
       const xx = x + 700 + (((row / 5) | 0) % 2 ? crestOff : -crestOff);
       if (row % 5 === 2 && ((xx + row * 3) % 7) < 3 && hash(Math.floor((xx + row * 3) / 7), row, 11) > 0.62) set(row < 10 ? C.crest : C['sea-light']);
+      if (cur > 0.05) {                                 // current lines drifting down the bay
+        const yy = y - curOff + 900;
+        if (((x * 3 + yy) % 29) === 0 && hash(Math.floor(x / 6), Math.floor(yy / 9), 31) > 1 - 0.5 * cur) set(C['sea-light']);
+      }
       if (sun > 0.3 && Math.abs(x - sunX) < sunR * (1 - ts) && row % 3 !== 0 && hash(x >> 1, row, 6) > 1 - 0.6 * sun) set(C.beam);
     }
     const L = Larr[i];
@@ -708,9 +759,10 @@ function renderSprites() {
 
   const sel = selected();
   for (const b of S.boats) {
+    if (b.state === 'hidden') { px(LK.mix(p.lamp, p.fog, 0.6), Math.round(b.x), Math.round(b.y - b.h / 2) - 1); continue; }
     // the Pilot's route: a dashed wake behind the boat
     b.trail.forEach((t, k) => { if (k % 5 < 3) px(p.route, t[0], t[1]); });
-    const spr = LK.SPRITES[b.type], x0 = Math.round(b.x - b.w / 2), y0 = Math.round(b.y - b.h / 2);
+    const spr = spriteOf(b.type), x0 = Math.round(b.x - b.w / 2), y0 = Math.round(b.y - b.h / 2);
     const inLight = (b.state !== 'sea' && b.state !== 'arriving') || S.stage === 'dawn' || boatLit(b);
     LK.drawSprite(ctx, spr, x0, y0, p, inLight ? { flip: b.left } : { dim: 0.6, dimTo: 'fog', flip: b.left });
     if (!inLight) { px(p.lamp, x0 + Math.floor(b.w / 2), y0 - 2); px(LK.mix(p.lamp, p.fog, 0.5), x0 + Math.floor(b.w / 2), y0 - 1); }
@@ -814,14 +866,15 @@ const escapeHTML = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', 
 const RELAY = location.protocol.startsWith('http');
 let lastPost = 0;
 function pilotState() {
-  const r = S.reading || {}, b = selected();
+  const r = S.reading || {}, b = selected(), ferry = S.boats.find(o => o.type === 'ferry');
   return {
     stage: S.stage, tide: S.tide, tides: CFG.tides, stageT: S.stageT, durations: CFG.durations, paused: S.paused,
     boatsHome: S.boatsHome, passengers: S.passengers, onWater: activeBoats().length,
     steady: S.beam.count, steadyForFlare: CFG.steadyForFlare, flare: S.beam.flare > 0.5,
     attention: r.att ?? null, poor: r.poor ?? null, headset: headsetLive(), bridgeOn: IN.bridge, simFrost: IN.simFrost,
     threshold: CFG.threshold, holdSec: CFG.holdSec, pending: S.pending, highContrast: S.highContrast,
-    tideStats: S.tideStats, summaryShown: S.summaryShown, layout: S.layout, current: false, ferry: 'none',
+    tideStats: S.tideStats, summaryShown: S.summaryShown, layout: S.layout, current: currentOn(),
+    ferry: !ferry ? (S.tide >= CFG.ferryTide ? 'home' : 'none') : ferry.state === 'hidden' ? 'hidden' : ferry.state === 'docked' ? 'home' : 'found',
     marked: b ? { type: b.type, status: b.status, passengers: b.passengers } : null,
   };
 }
